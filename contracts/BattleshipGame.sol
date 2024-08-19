@@ -65,7 +65,7 @@ contract BattleshipGame is Ownable {
                     ships[index].start = Position(x, y);
                     for (uint8 j = 0; j < shipLength; j++) {
                         uint16 positionKey = packCoordinates(x + j, y);
-                        positionToShipIndex[positionKey] = index;
+                        positionToShipIndex[positionKey] = index + 1;
                     }
                     index++;
                 }
@@ -102,8 +102,8 @@ contract BattleshipGame is Ownable {
     /// @param shipIndex The index of the ship.
     /// @return Position of the ship.
     function getShipPosition(uint8 shipIndex) public view returns (Position memory) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex].start;
+        require(shipIndex - 1 < totalShips, 'Ship index out of bounds');
+        return ships[shipIndex - 1].start;
     }
 
     /// @notice Gets positions of all ships.
@@ -157,6 +157,7 @@ contract BattleshipGame is Ownable {
 
         uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
+            shipIndex--;
             success = true;
             Ship storage ship = ships[shipIndex];
             uint8 hitIndex = x - ship.start.x;
