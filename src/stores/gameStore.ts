@@ -26,6 +26,7 @@ export type GameState = {
     hoveredCell: Cell | null;
     scrollPosition: [number, number];
     selectedCell: Cell | null;
+    freePlayWindowOpen: boolean;
     helpWindowOpen: boolean;
     prizeWindowOpen: boolean;
 };
@@ -38,6 +39,7 @@ export type GameActions = {
     setSingleRevealedCell: (x: number, y: number, type: RevealedCellType) => void;
     addUnknownCell: (x: number, y: number) => void;
     clearUnknownCells: () => void;
+    toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
     togglePrizeWindow: () => void;
 };
@@ -56,6 +58,7 @@ export const useGameStore = create<GameStore>(
             scrollPosition: [0, 0],
             mousePosition: [0, 0],
             selectedCell: null,
+            freePlayWindowOpen: false,
             helpWindowOpen: true,
             prizeWindowOpen: false,
 
@@ -126,6 +129,7 @@ export const useGameStore = create<GameStore>(
                 }),
 
             clearUnknownCells: () => set({ unknownCells: [] }),
+            toggleFreePlayWindow: () => set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
             togglePrizeWindow: () => set((state) => ({ prizeWindowOpen: !state.prizeWindowOpen })),
         }),

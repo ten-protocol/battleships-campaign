@@ -1,8 +1,18 @@
 import logo from '@/assets/white_logotype.png';
+import Button from '@/components/Button/Button';
+import { FAUCET_URL } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
 
 export default function PageHeader() {
-    const [toggleHelpWindow, togglePrizeWindow] = useGameStore((state) => [state.toggleHelpWindow, state.togglePrizeWindow]);
+    const [toggleFreePlayWindow, toggleHelpWindow, togglePrizeWindow] = useGameStore((state) => [
+        state.toggleFreePlayWindow,
+        state.toggleHelpWindow,
+        state.togglePrizeWindow,
+    ]);
+
+    const handleShowFreePlay = () => {
+        toggleFreePlayWindow();
+    };
 
     const handleShowGameRules = () => {
         toggleHelpWindow();
@@ -13,13 +23,21 @@ export default function PageHeader() {
     };
 
     return (
-        <div className="flex mb-10 justify-between">
+        <div className="flex mb-10 mt-5 justify-between">
             <img src={logo} alt="test" width={120} />
-            <div className="flex gap-8">
-                <a onClick={handleShowGameRules}>How to play</a>
-                <a onClick={handleShowGameRules}>Get Free Plays</a>
-                <a onClick={handleShowPreviousGames}>Claim Prizes</a>
-                <a onClick={handleShowPreviousGames}>TEN Faucet</a>
+            <div className="flex gap-4">
+                <Button variant="hoverBorder" onClick={handleShowFreePlay}>
+                    Get Free Plays
+                </Button>
+                <a href={FAUCET_URL} target="_blank">
+                    <Button variant="hoverBorder">TEN Faucet</Button>
+                </a>
+                <Button variant="hoverBorder" onClick={handleShowGameRules}>
+                    How to play
+                </Button>
+                <Button variant="hoverBorder" onClick={handleShowPreviousGames}>
+                    Claim Rewards
+                </Button>
             </div>
         </div>
     );

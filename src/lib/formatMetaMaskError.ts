@@ -20,7 +20,7 @@ interface SerializedError {
     };
 }
 
-export function handleMetaMaskError(error: unknown): string {
+export function formatMetaMaskError(error: unknown): string {
     if (!error) {
         return 'Unknown error';
     }

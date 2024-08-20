@@ -1,34 +1,51 @@
-import {useWalletStore} from "@/stores/walletStore";
-import {ethers} from "ethers";
-import {useEffect, useState} from "react";
-import {MOVE_FEE} from "@/lib/constants";
+import { useEffect } from 'react';
 
-export default function MetaMaskWalletBalance () {
-    const address = useWalletStore(state => state.address);
-    const [balance, setBalance] = useState<string>("0")
+import { ethers } from 'ethers';
+
+import Button from '@/components/Button/Button';
+import { FAUCET_URL, MOVE_FEE } from '@/lib/constants';
+import { useWalletStore } from '@/stores/walletStore';
+
+export default function MetaMaskWalletBalance() {
+    const [address, ethBalance, setEthBalance, provider] = useWalletStore((state) => [
+        state.address,
+        state.ethBalance,
+        state.setEthBalance,
+        state.provider
+    ]);
 
     useEffect(() => {
         (async () => {
-            if (!address) return
+            if (!address || !provider) return;
 
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const balance = await provider.getBalance(address);
+            const browserProvider = new ethers.BrowserProvider(provider);
+            const balance = await browserProvider.getBalance(address);
 
-            setBalance(ethers.formatEther(balance).toString())
+            setEthBalance(parseFloat(ethers.formatEther(balance)));
 
-            provider.on('block', async (blockNumber) => {
-                const balance = await provider.getBalance(address);
+            browserProvider.on('block', async () => {
+                const balance = await browserProvider.getBalance(address);
+                setEthBalance(parseFloat(ethers.formatEther(balance)));
+            });
+        })();
+    }, [address, provider]);
 
-                setBalance(ethers.formatEther(balance).toString())
-            })
-        })()
-    }, [])
-
+    const numberOfPlays = Math.floor(ethBalance / parseFloat(MOVE_FEE));
 
     return (
         <div>
-            <h3>BALANCES</h3>
-            <p>{parseFloat(balance).toFixed(3)}ETH ({Math.floor(balance/MOVE_FEE)} PLAYS)</p>
+            <h3 className="mb-2">BALANCES</h3>
+            <p>
+                {ethBalance.toFixed(3)} ETH <span className="text-sm">({numberOfPlays} PLAYS)</span>
+            </p>
+
+            {numberOfPlays === 0 && (
+                <div className="flex w-full justify-center">
+                    <a className="my-2" href={FAUCET_URL} target="_blank">
+                        <Button variant="hoverBorder">Request tokens</Button>
+                    </a>
+                </div>
+            )}
         </div>
-    )
+    );
 }

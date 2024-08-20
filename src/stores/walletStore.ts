@@ -11,27 +11,32 @@ export type WalletState = {
     signer: JsonRpcSigner | null;
     address: string | null;
     isConnected: boolean;
-}
+    ethBalance: number;
+};
 
 export type WalletActions = {
     setProvider: (provider: Eip1193Provider, chainId?: string) => Promise<void>;
     setAddress: (address: string | null) => void;
     handleNetworkChange: (chainId: string) => void;
-}
+    setEthBalance: (balance: number) => void;
+};
 
-export type WalletStore = WalletState & WalletActions
+export type WalletStore = WalletState & WalletActions;
 
 export const useWalletStore = create<WalletStore>((set) => ({
     provider: null,
     signer: null,
     address: null,
     isConnected: false,
+    ethBalance: 0,
 
     setProvider: async (provider, chainId) => {
         const signer = await new ethers.BrowserProvider(provider).getSigner();
         const addNewMessage = useMessageStore.getState().addNewMessage;
 
-        addNewMessage(`[BattleshipGame Contract] Contract Address: ${import.meta.env.VITE_CONTRACT_ADDRESS}`);
+        addNewMessage(
+            `[BattleshipGame Contract] Contract Address: ${import.meta.env.VITE_CONTRACT_ADDRESS}`
+        );
         set({
             provider,
             signer,
@@ -39,6 +44,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
         });
     },
     setAddress: (address) => set({ address }),
+    setEthBalance: (balance) => set({ ethBalance: balance }),
 
     handleNetworkChange: (chainId: string) => {
         set({

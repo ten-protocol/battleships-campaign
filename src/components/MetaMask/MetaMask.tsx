@@ -2,9 +2,9 @@ import { useShallow } from 'zustand/react/shallow';
 
 import metaMaskLogo from '@/assets/metamask-logo.svg';
 import HudWindow from '@/components/HudWindow/HudWindow';
+import MetaMaskWalletBalance from '@/components/MetaMask/MetaMaskWalletBalance';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWalletStore } from '@/stores/walletStore';
-import MetaMaskWalletBalance from "@/components/MetaMask/MetaMaskWalletBalance";
 
 export default function MetaMask() {
     const { address, setAddress } = useWalletStore(
@@ -30,7 +30,7 @@ export default function MetaMask() {
 
     return (
         <HudWindow
-            headerTitle="Connection Status"
+            headerTitle="Wallet Status"
             footerContent={
                 <div className="flex gap-4">
                     <img src={metaMaskLogo} width={50} />
@@ -42,8 +42,7 @@ export default function MetaMask() {
                 </div>
             }
         >
-        <MetaMaskWalletBalance address={address} />
-
+            <MetaMaskWalletBalance />
         </HudWindow>
     );
 }

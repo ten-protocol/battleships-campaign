@@ -4,7 +4,7 @@ import styles from './styles.module.scss';
 
 type Props = {
     onClick?: () => void;
-    variant?: 'light' | 'dark';
+    variant?: 'light' | 'dark' | 'hoverBorder';
     children?: ReactNode;
     classes?: string | string[];
 };
@@ -12,7 +12,7 @@ type Props = {
 export default function Button({ onClick, variant = 'dark', children, classes = '' }: Props) {
     return (
         <button
-            className={[styles.button, variant === 'light' ? styles.light : '', ...classes].join(
+            className={[styles.button, styles[variant], ...classes].join(
                 ' '
             )}
             onClick={onClick}

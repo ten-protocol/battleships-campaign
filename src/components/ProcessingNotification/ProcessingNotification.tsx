@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
+import { FAUCET_URL, MOVE_FEE } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
 
 export default function ProcessingNotification() {
@@ -16,6 +17,10 @@ export default function ProcessingNotification() {
 
     const handleClose = () => {
         resetGuessState();
+    };
+
+    const handleFreePlays = () => {
+        handleClose();
     };
 
     const CloseButton = <Button onClick={handleClose}>Close</Button>;
@@ -39,6 +44,27 @@ export default function ProcessingNotification() {
                 <p className="text-lg bg-red-600 inline-block px-1">WEAPON ACTIVATION FAILED</p>
                 <p className="text-sm px-1">Error detected</p>
                 <p className="text-sm px-1">{lastError}</p>
+            </div>
+        );
+    }
+    if (guessState === 'INSUFFICIENT_FUNDS') {
+        footerContent = <div>{CloseButton}</div>;
+        bodyContent = (
+            <div className="flex flex-col items-start">
+                <p className="text-lg bg-red-600 inline-block px-1">Insufficient funds</p>
+                <p className="text-sm mt-2">
+                    At least {MOVE_FEE} of ETH or 1 HIT token is required to play.
+                </p>
+                <p className="text-sm mt-2">Get more tokens from one of the sources below.</p>
+                <div className="mt-8 flex gap-4 w-full justify-center">
+                    <a href={FAUCET_URL} target="_blank">
+                        <Button variant="light">TEN Faucet</Button>
+                    </a>
+
+                    <Button variant="light" onClick={handleFreePlays}>
+                        FREE PLAYS
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -91,7 +117,7 @@ export default function ProcessingNotification() {
                 modalMode={true}
                 transparentOverlay={true}
                 footerContent={
-                    <div>
+                    <div className="flex justify-center">
                         <motion.div
                             key={guessState}
                             initial="initial"

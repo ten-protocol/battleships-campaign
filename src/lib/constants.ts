@@ -11,3 +11,5 @@ export const ROWS = 100;
 export const HEX_GRID_MARGIN = 32;
 export const SHIP_SIZE = 3;
 export const TEN_CHAIN_ID = '0x1bb';
+//TODO: Replace with correct url
+export const FAUCET_URL = "https://ten-web-faucet.vercel.app/"

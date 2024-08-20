@@ -2,11 +2,11 @@ import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type PlayData = {
-    lastPlay: string|null;
+    lastPlay: string | null;
     hits: number;
     misses: number;
     shipsSunk: number;
-    redeemed: boolean
+    redeemed: boolean;
 };
 
 export type PlayTrackerState = {
@@ -16,7 +16,7 @@ export type PlayTrackerState = {
 export type PlayTrackerActions = {
     addNewGameContract: (a: string) => void;
     addPlayToGameContract: (a: string, s: boolean, ss: boolean) => void;
-    getCurrentGame: () => PlayData|undefined;
+    getCurrentGame: () => PlayData | undefined;
 };
 
 export type PlayTrackerStore = PlayTrackerState & PlayTrackerActions;
@@ -28,7 +28,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
 
             addNewGameContract: (address: string) => {
                 if (!get().games[address]) {
-                    const newState = get().games
+                    const newState = get().games;
 
                     newState[address] = {
                         lastPlay: null,
@@ -36,32 +36,32 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                         misses: 0,
                         shipsSunk: 0,
                         redeemed: false,
-                    }
+                    };
 
                     set({
-                        games: newState
+                        games: newState,
                     });
                 }
             },
 
-            addPlayToGameContract: (address: string, success:boolean, shipSunk: boolean) => {
+            addPlayToGameContract: (address: string, success: boolean, shipSunk: boolean) => {
                 if (!get().games[address]) {
-                    throw new Error("Cannot find current game in play-tracker store.")
+                    throw new Error('Cannot find current game in play-tracker store.');
                 }
-                const newState = get().games
+                const newState = get().games;
                 newState[address].lastPlay = new Date().toISOString();
 
                 if (shipSunk) {
-                    newState[address].shipsSunk++
+                    newState[address].shipsSunk++;
                 }
 
                 if (success) {
-                    newState[address].hits++
+                    newState[address].hits++;
                 } else {
-                    newState[address].misses++
+                    newState[address].misses++;
                 }
 
-                set({games: newState})
+                set({ games: newState });
             },
 
             getCurrentGame: () => get().games[import.meta.env.VITE_CONTRACT_ADDRESS],

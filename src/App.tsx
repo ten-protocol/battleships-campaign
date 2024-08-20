@@ -7,12 +7,12 @@ import { Eip1193Provider } from 'ethers/src.ts/providers/provider-browser';
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
 import CellsRemaining from '@/components/CellsRemaining/CellsRemaining';
 import ClaimPrizeWindow from '@/components/ClaimPrizeWindow/ClaimPrizeWindow';
+import GameStats from '@/components/GameStats/GameStats';
 import Graveyard from '@/components/Graveyard/Graveyard';
 import HelpWindow from '@/components/HelpWindow/HelpWindow';
 import MessageLog from '@/components/MessageLog/MessageLog';
 import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
-import GameStats from '@/components/GameStats/GameStats';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
 import { TEN_CHAIN_ID } from '@/lib/constants';
 import { trackEvent } from '@/lib/trackEvent';
@@ -21,6 +21,7 @@ import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 import './App.css';
+import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 
 const queryClient = new QueryClient();
 
@@ -110,7 +111,7 @@ function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <div className="p-2">
+            <div className="py-2 px-6">
                 <PageHeader />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
                     <div className="order-2 lg:order-1">
@@ -119,7 +120,7 @@ function App() {
                     <div className="overflow-hidden order-1 md:col-span-2 lg:order-2 lg:col-span-1">
                         <BattleGrid />
                     </div>
-                    <div className="flex flex-col gap-4 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1">
+                    <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
                         <MetaMask />
                         <GameStats />
                         <CellsRemaining />
@@ -129,6 +130,7 @@ function App() {
                     </div>
                 </div>
                 <ProcessingNotification />
+                <FreePlayWindow />
                 <HelpWindow />
                 <ClaimPrizeWindow />
             </div>

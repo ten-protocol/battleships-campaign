@@ -5,12 +5,12 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGame.sol/BattleshipGame.json';
 import getCellXY from '@/helpers/getCellXY';
 import { MOVE_FEE } from '@/lib/constants';
-import { handleMetaMaskError } from '@/lib/handleMetaMaskError';
+import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
 import { useMessageStore } from '@/stores/messageStore';
+import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 import { useGameStore } from './gameStore';
-import {usePlayTrackerStore} from "@/stores/playTrackerStore";
 
 export type ContractState = {
     hits: string[][];
@@ -21,7 +21,7 @@ export type ContractState = {
     guessState: GuessState;
     lastGuessCoords: number[] | null;
     lastError: string;
-}
+};
 
 export type ContractActions = {
     submitGuessWithEth: (x: number, y: number) => Promise<void>;
@@ -31,14 +31,14 @@ export type ContractActions = {
     setMisses: (m: string[][]) => void;
     setGraveyard: (g: boolean[]) => void;
     setLastGuessCoords: (g: string[]) => void;
-}
+};
 
 export type ContractStore = ContractState & ContractActions;
-
 
 export type GuessState =
     | 'IDLE'
     | 'STARTED'
+    | 'INSUFFICIENT_FUNDS'
     | 'ERROR'
     | 'TRANSACTION_SUCCESS'
     | 'RECEIVED_RECEIPT'
@@ -63,7 +63,7 @@ export const useContractStore = create<ContractStore>(
                 const addNewMessage = useMessageStore.getState().addNewMessage;
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
 
-                console.log(x, y)
+                console.log(x, y);
 
                 if (!signer) {
                     throw new Error('No signer available.');
@@ -85,11 +85,23 @@ export const useContractStore = create<ContractStore>(
                     });
                     set({ guessState: 'TRANSACTION_SUCCESS' });
                     const receipt = await submitTx.wait();
-                    addNewMessage('Issued Guess tx: ' + receipt.hash);
-                    const { allHits, allMisses, graveyard, prizePool, success, sunk, guessedCoords } =
-                        receipt.logs[0].args.toObject();
 
-                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk)
+                    addNewMessage('Issued Guess tx: ' + receipt.hash);
+                    const hitFeedbackLog = receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
+
+
+                    console.log(hitFeedbackLog);
+                    const {
+                        allHits,
+                        allMisses,
+                        graveyard,
+                        prizePool,
+                        success,
+                        sunk,
+                        guessedCoords,
+                    } = hitFeedbackLog.args.toObject();
+
+                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk);
 
                     get().setHits(allHits);
                     get().setMisses(allMisses);
@@ -99,18 +111,25 @@ export const useContractStore = create<ContractStore>(
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
                     const e = error as { reason?: string };
+                    const formattedError = formatMetaMaskError(error)
+
                     set({ guessState: 'ERROR' });
-                    if (e?.reason) {
+
+                    if (formattedError !== "Unknown error") {
+                        addNewMessage(formattedError, 'ERROR');
+
+                        if (formattedError.includes("insufficient funds")){
+                            set({ guessState: 'INSUFFICIENT_FUNDS' });
+                        }
+
+                        set({ lastError: formattedError });
+                    } else {
                         addNewMessage('Failed to issue Guess - ' + e?.reason + ' ...', 'ERROR');
                         set({ lastError: 'Failed to issue Guess - ' + e?.reason });
 
                         if (e?.reason === 'Cell already hit') {
                             useGameStore.getState().addUnknownCell(x, y);
                         }
-                    } else {
-                        addNewMessage(handleMetaMaskError(error), 'ERROR');
-                        set({ lastError: handleMetaMaskError(error) });
-                        console.error(e);
                     }
                 }
             },

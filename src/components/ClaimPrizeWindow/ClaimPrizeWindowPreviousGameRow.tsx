@@ -1,19 +1,18 @@
-import {useMutation, useQuery} from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import Button from '@/components/Button/Button';
 import shortenAddress from '@/helpers/shortenAddress';
+import claimPrize from '@/lib/claimPrize';
 import getGameOverStatus from '@/lib/getGameOverStatus';
 import getPersonalStats from '@/lib/getPersonalStats';
-import { useWalletStore } from '@/stores/walletStore';
-import claimPrize from "@/lib/claimPrize";
+import { JsonRpcSigner } from 'ethers/lib.commonjs/providers/provider-jsonrpc';
 
 type Props = {
     contractAddress: string;
+    signer: JsonRpcSigner;
 };
 
-export default function ClaimPrizeWindowPreviousGameRow({ contractAddress }: Props) {
-    const signer = useWalletStore((state) => state.signer);
-
+export default function ClaimPrizeWindowPreviousGameRow({ contractAddress, signer }: Props) {
     const {
         data: stats,
         isPending: statsPending,
@@ -33,25 +32,22 @@ export default function ClaimPrizeWindowPreviousGameRow({ contractAddress }: Pro
 
     const rewardMutation = useMutation({
         mutationFn: (newTodo) => {
-            return claimPrize(contractAddress, signer)
+            return claimPrize(contractAddress, signer);
         },
-    })
+    });
 
     const handleClaim = async () => {
-        const a = rewardMutation.mutateAsync()
+        const a = rewardMutation.mutateAsync();
+        console.log(a);
+    };
 
-        console.log(a)
-    }
-
-    console.log(gameOverStatus, stats);
-
-    if (statsError||gameOverStatusError){
+    if (statsError || gameOverStatusError) {
         return (
             <tr>
                 <td>{shortenAddress(contractAddress, 4, 4)}</td>
                 <td colSpan={3}>Error Fetching Data...</td>
             </tr>
-        )
+        );
     }
 
     if (statsPending || gameOverStatusPending) {
@@ -60,19 +56,16 @@ export default function ClaimPrizeWindowPreviousGameRow({ contractAddress }: Pro
                 <td>{shortenAddress(contractAddress, 4, 4)}</td>
                 <td colSpan={3}>Fetching Info...</td>
             </tr>
-        )
+        );
     }
 
     return (
         <tr>
-        <td>{shortenAddress(contractAddress, 4, 4)}</td>
-            <td>{gameOverStatus ? "GAME OVER" : "IN PROGRESS"}</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td>
-                {!gameOverStatus ? <Button onClick={handleClaim}>CLAIM PRIZE</Button> : "-"}
-            </td>
+            <td className="text-sm">{shortenAddress(contractAddress, 4, 4)}</td>
+            <td className="text-sm text-nowrap">{gameOverStatus ? 'GAME OVER' : 'IN PROGRESS'}</td>
+            <td>{parseInt(stats[0])}</td>
+            <td>{parseInt(stats[1])}</td>
+            <td className="text-nowrap text-center">{gameOverStatus ? <Button variant="hoverBorder" onClick={handleClaim}>CLAIM PRIZE</Button> : '-'}</td>
         </tr>
     );
 }

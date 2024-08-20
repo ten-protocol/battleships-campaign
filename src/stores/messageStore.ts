@@ -9,9 +9,9 @@ export type MessageState = {
     errorMessage: string;
 };
 
-export type MessageActions  = {
+export type MessageActions = {
     addNewMessage: (msg: string, type?: MessageType) => void;
-}
+};
 
 export type MessageStore = MessageState & MessageActions;
 

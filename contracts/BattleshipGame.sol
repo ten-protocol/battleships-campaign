@@ -41,9 +41,9 @@ contract BattleshipGame is Ownable {
     event HitWithToken(address indexed player, uint8 x, uint8 y);
 
     constructor() Ownable(msg.sender) {
-            seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
-            generatePositions();
-        }
+        seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
+        generatePositions();
+    }
 
     /// @notice Emitted when a guess is made.
     /// @param user The address of the user making the guess.
