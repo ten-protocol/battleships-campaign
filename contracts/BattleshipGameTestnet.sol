@@ -2,9 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BattleshipGame is Ownable {
+contract BattleshipGame {
     uint8 constant gridSize = 100;
     uint8 constant totalShips = 249;
     uint8 constant shipLength = 3;
@@ -45,7 +44,7 @@ contract BattleshipGame is Ownable {
     event GameOver(address winner, uint256 totalZENAllocated);
     event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred);
 
-    constructor(address tokenAddress) Ownable(msg.sender) {
+    constructor(address tokenAddress) {
         rewardToken = IERC20(tokenAddress);
         seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
         generatePositions();
