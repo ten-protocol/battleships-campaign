@@ -97,7 +97,7 @@ export const useGameStore = create<GameStore>(
                 if (!selectedCell || useContractStore.getState().guessState !== 'IDLE') return;
 
                 set({ selectedCell });
-                const submitGuess = useContractStore.getState().submitGuessWithEth;
+                const submitGuess = useContractStore.getState().submitGuess;
                 submitGuess(selectedCell.col, selectedCell.row);
             },
 

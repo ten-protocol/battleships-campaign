@@ -2,7 +2,7 @@ import { ethers, formatUnits } from 'ethers';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGame.sol/BattleshipGame.json';
+import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
 import getCellXY from '@/helpers/getCellXY';
 import { MOVE_FEE } from '@/lib/constants';
 import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
@@ -24,7 +24,7 @@ export type ContractState = {
 };
 
 export type ContractActions = {
-    submitGuessWithEth: (x: number, y: number) => Promise<void>;
+    submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
     setPrizePool: (pp: string) => void;
     setHits: (h: string[][]) => void;
@@ -58,7 +58,7 @@ export const useContractStore = create<ContractStore>(
             lastGuessCoords: null,
             previousContractAddresses: [],
 
-            submitGuessWithEth: async (x: number, y: number) => {
+            submitGuess: async (x: number, y: number) => {
                 const signer = useWalletStore.getState().signer;
                 const addNewMessage = useMessageStore.getState().addNewMessage;
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
@@ -89,27 +89,25 @@ export const useContractStore = create<ContractStore>(
                     addNewMessage('Issued Guess tx: ' + receipt.hash);
                     const hitFeedbackLog = receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
 
-
-                    console.log(hitFeedbackLog);
                     const {
                         allHits,
                         allMisses,
                         graveyard,
-                        prizePool,
                         success,
                         sunk,
                         guessedCoords,
+                        zenTransferred
                     } = hitFeedbackLog.args.toObject();
 
-                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk);
+                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk, zenTransferred);
 
                     get().setHits(allHits);
                     get().setMisses(allMisses);
                     get().setGraveyard(graveyard);
-                    get().setPrizePool(prizePool);
                     set({ guessState: success ? 'HIT' : 'MISS' });
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
+                    console.error(error)
                     const e = error as { reason?: string };
                     const formattedError = formatMetaMaskError(error)
 
