@@ -28,3 +28,7 @@ export default {
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
 - Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
 - Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+## Deploying Battleships 
+
+The test version of the contract requires to deploy ZEN first and push it's address to the constructor of `BattleshipGameTestnet`. Then it's crucial to call `mint()` function on ZEN contract specifying `BattleshipGameTestnet` as a receiver. The target amount to mint is `1262 * 10**18`.
