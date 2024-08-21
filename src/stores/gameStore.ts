@@ -97,7 +97,7 @@ export const useGameStore = create<GameStore>(
                 if (!selectedCell || useContractStore.getState().guessState !== 'IDLE') return;
 
                 set({ selectedCell });
-                const submitGuess = useContractStore.getState().submitGuessWithEth;
+                const submitGuess = useContractStore.getState().submitGuess;
                 submitGuess(selectedCell.col, selectedCell.row);
             },
 
@@ -129,7 +129,8 @@ export const useGameStore = create<GameStore>(
                 }),
 
             clearUnknownCells: () => set({ unknownCells: [] }),
-            toggleFreePlayWindow: () => set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
+            toggleFreePlayWindow: () =>
+                set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
             togglePrizeWindow: () => set((state) => ({ prizeWindowOpen: !state.prizeWindowOpen })),
         }),

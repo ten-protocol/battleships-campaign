@@ -9,7 +9,6 @@ export default async function getGameOverStatus(address: string, signer: JsonRpc
     try {
         const submitTx = await contract.gameOver();
 
-
         return submitTx;
     } catch (error) {
         console.error(error);

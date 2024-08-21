@@ -11,7 +11,7 @@ export default function MetaMaskWalletBalance() {
         state.address,
         state.ethBalance,
         state.setEthBalance,
-        state.provider
+        state.provider,
     ]);
 
     useEffect(() => {
@@ -34,7 +34,7 @@ export default function MetaMaskWalletBalance() {
 
     return (
         <div>
-            <h3 className="mb-2">BALANCES</h3>
+            <h3 className="mb-1">BALANCE</h3>
             <p>
                 {ethBalance.toFixed(3)} ETH <span className="text-sm">({numberOfPlays} PLAYS)</span>
             </p>

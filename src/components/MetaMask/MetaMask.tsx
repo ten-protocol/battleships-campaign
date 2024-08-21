@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 
 import metaMaskLogo from '@/assets/metamask-logo.svg';
+import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
 import MetaMaskWalletBalance from '@/components/MetaMask/MetaMaskWalletBalance';
 import { useMessageStore } from '@/stores/messageStore';
@@ -37,7 +38,9 @@ export default function MetaMask() {
                     {address ? (
                         <p>MetaMask Connected</p>
                     ) : (
-                        <button onClick={connectAccount}>Connect to MetaMask</button>
+                        <Button variant="light" onClick={connectAccount}>
+                            Connect Metamask
+                        </Button>
                     )}
                 </div>
             }

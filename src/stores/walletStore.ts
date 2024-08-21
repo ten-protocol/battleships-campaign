@@ -12,6 +12,7 @@ export type WalletState = {
     address: string | null;
     isConnected: boolean;
     ethBalance: number;
+    chainId: string | null;
 };
 
 export type WalletActions = {
@@ -29,6 +30,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
     address: null,
     isConnected: false,
     ethBalance: 0,
+    chainId: null,
 
     setProvider: async (provider, chainId) => {
         const signer = await new ethers.BrowserProvider(provider).getSigner();
@@ -41,6 +43,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
             provider,
             signer,
             isConnected: chainId === TEN_CHAIN_ID,
+            chainId,
         });
     },
     setAddress: (address) => set({ address }),
@@ -49,6 +52,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
     handleNetworkChange: (chainId: string) => {
         set({
             isConnected: chainId === TEN_CHAIN_ID,
+            chainId,
         });
     },
 }));

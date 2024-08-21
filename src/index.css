@@ -13,10 +13,11 @@
 
 a {
     cursor: pointer;
+    color: rgb(var(--color-accent));
 }
 
 a:hover {
-    color: rgb(var(--color-accent));
+    text-decoration: none;
 }
 
 body {

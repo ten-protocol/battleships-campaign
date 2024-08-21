@@ -2,7 +2,7 @@ import { ethers, formatUnits } from 'ethers';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGame.sol/BattleshipGame.json';
+import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
 import getCellXY from '@/helpers/getCellXY';
 import { MOVE_FEE } from '@/lib/constants';
 import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
@@ -21,16 +21,17 @@ export type ContractState = {
     guessState: GuessState;
     lastGuessCoords: number[] | null;
     lastError: string;
+    lastReward: number;
 };
 
 export type ContractActions = {
-    submitGuessWithEth: (x: number, y: number) => Promise<void>;
+    submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
-    setPrizePool: (pp: string) => void;
-    setHits: (h: string[][]) => void;
-    setMisses: (m: string[][]) => void;
-    setGraveyard: (g: boolean[]) => void;
-    setLastGuessCoords: (g: string[]) => void;
+    setPrizePool: (prizePool: string) => void;
+    setHits: (hits: string[][]) => void;
+    setMisses: (misses: string[][]) => void;
+    setGraveyard: (graveyard: boolean[]) => void;
+    setLastGuessCoords: (guessedCoords: string[]) => void;
 };
 
 export type ContractStore = ContractState & ContractActions;
@@ -57,8 +58,9 @@ export const useContractStore = create<ContractStore>(
             lastError: '',
             lastGuessCoords: null,
             previousContractAddresses: [],
+            lastReward: 0,
 
-            submitGuessWithEth: async (x: number, y: number) => {
+            submitGuess: async (x: number, y: number) => {
                 const signer = useWalletStore.getState().signer;
                 const addNewMessage = useMessageStore.getState().addNewMessage;
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
@@ -87,38 +89,43 @@ export const useContractStore = create<ContractStore>(
                     const receipt = await submitTx.wait();
 
                     addNewMessage('Issued Guess tx: ' + receipt.hash);
-                    const hitFeedbackLog = receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
+                    const hitFeedbackLog =
+                        receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
 
-
-                    console.log(hitFeedbackLog);
                     const {
                         allHits,
                         allMisses,
                         graveyard,
-                        prizePool,
                         success,
                         sunk,
                         guessedCoords,
+                        zenTransferred,
                     } = hitFeedbackLog.args.toObject();
 
-                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk);
+                    addPlayToGameContract(
+                        import.meta.env.VITE_CONTRACT_ADDRESS,
+                        success,
+                        sunk,
+                        zenTransferred
+                    );
 
                     get().setHits(allHits);
                     get().setMisses(allMisses);
                     get().setGraveyard(graveyard);
-                    get().setPrizePool(prizePool);
                     set({ guessState: success ? 'HIT' : 'MISS' });
+                    set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
+                    console.error(error);
                     const e = error as { reason?: string };
-                    const formattedError = formatMetaMaskError(error)
+                    const formattedError = formatMetaMaskError(error);
 
                     set({ guessState: 'ERROR' });
 
-                    if (formattedError !== "Unknown error") {
+                    if (formattedError !== 'Unknown error') {
                         addNewMessage(formattedError, 'ERROR');
 
-                        if (formattedError.includes("insufficient funds")){
+                        if (formattedError.includes('insufficient funds')) {
                             set({ guessState: 'INSUFFICIENT_FUNDS' });
                         }
 

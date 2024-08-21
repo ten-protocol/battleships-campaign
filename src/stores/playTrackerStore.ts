@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -7,6 +8,7 @@ export type PlayData = {
     misses: number;
     shipsSunk: number;
     redeemed: boolean;
+    rewardedTokens: number;
 };
 
 export type PlayTrackerState = {
@@ -14,9 +16,13 @@ export type PlayTrackerState = {
 };
 
 export type PlayTrackerActions = {
-    addNewGameContract: (a: string) => void;
-    addPlayToGameContract: (a: string, s: boolean, ss: boolean) => void;
-    getCurrentGame: () => PlayData | undefined;
+    addNewGameContract: (address: string) => void;
+    addPlayToGameContract: (
+        address: string,
+        success: boolean,
+        shipSunk: boolean,
+        rewardedTokens: string
+    ) => void;
 };
 
 export type PlayTrackerStore = PlayTrackerState & PlayTrackerActions;
@@ -36,6 +42,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                         misses: 0,
                         shipsSunk: 0,
                         redeemed: false,
+                        rewardedTokens: 0,
                     };
 
                     set({
@@ -44,7 +51,12 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                 }
             },
 
-            addPlayToGameContract: (address: string, success: boolean, shipSunk: boolean) => {
+            addPlayToGameContract: (
+                address: string,
+                success: boolean,
+                shipSunk: boolean,
+                rewardedTokens: string
+            ) => {
                 if (!get().games[address]) {
                     throw new Error('Cannot find current game in play-tracker store.');
                 }
@@ -57,14 +69,15 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
 
                 if (success) {
                     newState[address].hits++;
+                    newState[address].rewardedTokens += parseFloat(
+                        ethers.formatEther(rewardedTokens)
+                    );
                 } else {
                     newState[address].misses++;
                 }
 
                 set({ games: newState });
             },
-
-            getCurrentGame: () => get().games[import.meta.env.VITE_CONTRACT_ADDRESS],
         }),
         {
             name: `play-tracker-storage`,

@@ -27,7 +27,6 @@ export default function FreePlayWindow() {
         >
             <div className="max-w-xl p-6">
                 <h1 className="text-2xl font-bold mb-4">TODO</h1>
-
             </div>
         </HudWindow>
     );

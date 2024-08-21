@@ -5,6 +5,7 @@
     color: #fff;
     border: none;
     transition: background-color 0.2s;
+
     &:hover {
         background-color: rgb(var(--color-accent));
     }
@@ -46,15 +47,16 @@
             width: 200%;
             height: 100%;
             position: absolute;
-            background: linear-gradient(-0deg, rgba(226,111,111,0) 0%, rgba(226,111,111,1) 100%);
+            background: linear-gradient(
+                -0deg,
+                rgba(226, 111, 111, 0) 0%,
+                rgba(226, 111, 111, 1) 100%
+            );
             animation: a 3s infinite linear;
             z-index: -2;
             top: 50px;
         }
     }
-
-
-
 }
 
 @keyframes a {

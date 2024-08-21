@@ -2,12 +2,14 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BattleshipGame is Ownable {
+contract BattleshipGameTestnet {
     uint8 constant gridSize = 100;
     uint8 constant totalShips = 249;
     uint8 constant shipLength = 3;
+    uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
+    uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
+    uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
 
     struct Position {
         uint8 x;
@@ -25,7 +27,6 @@ contract BattleshipGame is Ownable {
     mapping(uint16 => bool) private misses;
     uint256 private seed;
     uint256 private nonce = 0;
-    uint256 public prizePool;
     bool[totalShips] public graveyard;
     uint8 public sunkShipsCount;
     bool public gameOver;
@@ -36,23 +37,19 @@ contract BattleshipGame is Ownable {
     mapping(address => uint16) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
+    uint256 public totalZENAllocated; // Track total ZEN tokens allocated
 
-    event GameOver(address winner, uint256 prizePool);
-    event HitWithToken(address indexed player, uint8 x, uint8 y);
+    IERC20 public rewardToken;
 
-    constructor() Ownable(msg.sender) {
+    event GameOver(address winner, uint256 totalZENAllocated);
+    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred);
+
+    constructor(address tokenAddress) {
+        rewardToken = IERC20(tokenAddress);
         seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
         generatePositions();
     }
 
-    /// @notice Emitted when a guess is made.
-    /// @param user The address of the user making the guess.
-    /// @param guessedCoords The coordinates submitted by the user.
-    /// @param success True if the guess hit a ship, false otherwise.
-    //TODO: Add comments
-    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 prizePool);
-
-    /// @notice Generates unique positions for ships on the grid.
     function generatePositions() private {
         uint8 index = 0;
         while (index < totalShips) {
@@ -75,10 +72,6 @@ contract BattleshipGame is Ownable {
         }
     }
 
-    /// @notice Checks if the ship position is unique and fits within the grid.
-    /// @param x The x-coordinate of the ship's start position.
-    /// @param y The y-coordinate of the ship's start position.
-    /// @return bool indicating whether the position is unique and fits within the grid.
     function isPositionUniqueAndFits(uint8 x, uint8 y) private view returns (bool) {
         if (x + shipLength > gridSize) return false;
         for (uint8 j = 0; j < shipLength; j++) {
@@ -90,32 +83,19 @@ contract BattleshipGame is Ownable {
         return true;
     }
 
-    /// @notice Packs x and y coordinates into a single uint16 value.
-    /// @param x The x-coordinate.
-    /// @param y The y-coordinate.
-    /// @return uint16 representing the packed coordinates.
     function packCoordinates(uint8 x, uint8 y) private pure returns (uint16) {
         return (uint16(x) << 8) | uint16(y);
     }
 
-    /// @notice Gets the position of a specific ship by its index.
-    /// @param shipIndex The index of the ship.
-    /// @return Position of the ship.
     function getShipPosition(uint8 shipIndex) public view returns (Position memory) {
         require(shipIndex - 1 < totalShips, 'Ship index out of bounds');
         return ships[shipIndex - 1].start;
     }
 
-    /// @notice Gets positions of all ships.
-    /// @return Array of all ships.
     function getAllShipPositions() public view returns (Ship[totalShips] memory) {
         return ships;
     }
 
-    /// @notice Gets the index of the ship at a specific grid position.
-    /// @param x The x-coordinate of the position.
-    /// @param y The y-coordinate of the position.
-    /// @return The index of the ship at the specified position.
     function getShipAtPosition(uint8 x, uint8 y) public view returns (uint8) {
         uint16 positionKey = packCoordinates(x, y);
         uint8 shipIndex = positionToShipIndex[positionKey];
@@ -123,25 +103,12 @@ contract BattleshipGame is Ownable {
         return shipIndex;
     }
 
-    /// @notice Hits a position on the grid and checks if a ship is hit.
-    /// @param x The x-coordinate of the position to hit.
-    /// @param y The y-coordinate of the position to hit.
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
+        require(msg.value == 0.00443 ether, 'Incorrect fee amount');
         uint16 positionKey = packCoordinates(x, y);
         require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
         _processHit(msg.sender, x, y);
-    }
-
-    function hitWithAddress(address player, uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
-        uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
-        _processHit(player, x, y);
     }
 
     function _processHit(address player, uint8 x, uint8 y) private {
@@ -149,8 +116,8 @@ contract BattleshipGame is Ownable {
         require(!hits[positionKey], 'Cell already hit');
         bool success;
         bool sunk;
+        uint256 zenTransferred = 0;
 
-        prizePool += msg.value;
         hits[positionKey] = true;
         totalHits++;
         playerHits[player]++;
@@ -176,62 +143,54 @@ contract BattleshipGame is Ownable {
                 graveyard[shipIndex] = true;
                 sunkShipsCount++;
                 playerSinks[player]++;
-
                 if (sunkShipsCount == totalShips) {
                     gameOver = true;
                     lastSunkShipPlayer = player;
-                    emit GameOver(lastSunkShipPlayer, prizePool);
+                    zenTransferred = FINAL_SINK_REWARD;
+                    emit GameOver(lastSunkShipPlayer, totalZENAllocated);
+                } else {
+                    zenTransferred = SINK_REWARD;
                 }
+            } else {
+                zenTransferred = HIT_REWARD;
             }
-        }
-        else {
+        } else {
             success = false;
             misses[positionKey] = true;
             allMisses.push(Position(x, y));
         }
 
-        emit HitFeedback(msg.sender, [x, y], success, sunk, allHits, allMisses, graveyard, prizePool);
+        if (zenTransferred > 0) {
+            require(rewardToken.transfer(player, zenTransferred), "Token transfer failed");
+            totalZENAllocated += zenTransferred;
+        }
+
+        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred);
     }
 
-    /// @notice Checks if a specific position on the grid is hit.
-    /// @param x The x-coordinate of the position.
-    /// @param y The y-coordinate of the position.
-    /// @return bool indicating whether the position is hit.
     function isHit(uint8 x, uint8 y) public view returns (bool) {
         uint16 positionKey = packCoordinates(x, y);
         return hits[positionKey];
     }
 
-    /// @notice Checks if a specific ship is sunk.
-    /// @param shipIndex The index of the ship.
-    /// @return bool indicating whether the ship is sunk.
     function isSunk(uint8 shipIndex) public view returns (bool) {
         require(shipIndex < totalShips, 'Ship index out of bounds');
         return graveyard[shipIndex];
     }
 
-    /// @notice Gets the hit status of each part of a specific ship.
-    /// @param shipIndex The index of the ship.
-    /// @return Array indicating which parts of the ship are hit.
     function getHitsOnShip(uint8 shipIndex) public view returns (bool[shipLength] memory) {
         require(shipIndex < totalShips, 'Ship index out of bounds');
         return ships[shipIndex].hits;
     }
 
-    /// @notice Gets the status of all ships in the graveyard.
-    /// @return Array indicating which ships are sunk.
     function getGraveyard() public view returns (bool[totalShips] memory) {
         return graveyard;
     }
 
-    /// @notice Gets all hit positions on the grid.
-    /// @return An array of Position structs representing the hit positions.
     function getAllHits() public view returns (Position[] memory) {
         return allHits;
     }
 
-    /// @notice Gets all miss positions so far.
-    /// @return Array of positions that have been missed.
     function getAllMisses() public view returns (Position[] memory) {
         return allMisses;
     }
@@ -242,24 +201,7 @@ contract BattleshipGame is Ownable {
         return (personalHits, personalSinks);
     }
 
-    function claimReward() public {
-        require(gameOver, 'Game is not over yet');
-        uint256 reward;
-
-        uint256 hitReward = (prizePool * 30) / 100;
-        reward += (hitReward * playerHits[msg.sender]) / totalHits;
-
-        uint256 sinkReward = (prizePool * 65) / 100;
-        reward += (sinkReward * playerSinks[msg.sender]) / sunkShipsCount;
-
-        if (msg.sender == lastSunkShipPlayer) {
-            uint256 finalShipReward = (prizePool * 5) / 100;
-            reward += finalShipReward;
-        }
-
-        playerHits[msg.sender] = 0;
-        playerSinks[msg.sender] = 0;
-
-        payable(msg.sender).transfer(reward);
+    function getZenTokenBalance() public view returns (uint256) {
+        return rewardToken.balanceOf(address(this));
     }
 }

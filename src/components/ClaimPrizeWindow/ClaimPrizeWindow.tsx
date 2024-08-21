@@ -5,7 +5,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
-import styles from "./styles.module.scss"
+import styles from './styles.module.scss';
 
 export default function ClaimPrizeWindow() {
     const signer = useWalletStore((state) => state.signer);
@@ -48,7 +48,11 @@ export default function ClaimPrizeWindow() {
                         {Object.entries(games)
                             .reverse()
                             .map(([key, playData]) => (
-                                <ClaimPrizeWindowPreviousGameRow key={key} contractAddress={key} signer={signer} />
+                                <ClaimPrizeWindowPreviousGameRow
+                                    key={key}
+                                    contractAddress={key}
+                                    signer={signer}
+                                />
                             ))}
                     </tbody>
                 </table>
