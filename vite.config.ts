@@ -10,7 +10,7 @@ export default defineConfig({
         Checker({ typescript: true }),
     ],
     define: {
-        'import.meta.env.VITE_SITE_URL': process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `""`,
+        'import.meta.env.VITE_SITE_URL': process.env.VERCEL_URL ? `"https://${process.env.VERCEL_URL}"` : `""`,
     },
     resolve: {
         alias: {
