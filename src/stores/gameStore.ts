@@ -129,7 +129,8 @@ export const useGameStore = create<GameStore>(
                 }),
 
             clearUnknownCells: () => set({ unknownCells: [] }),
-            toggleFreePlayWindow: () => set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
+            toggleFreePlayWindow: () =>
+                set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
             togglePrizeWindow: () => set((state) => ({ prizeWindowOpen: !state.prizeWindowOpen })),
         }),

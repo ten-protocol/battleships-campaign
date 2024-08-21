@@ -21,16 +21,17 @@ export type ContractState = {
     guessState: GuessState;
     lastGuessCoords: number[] | null;
     lastError: string;
+    lastReward: number;
 };
 
 export type ContractActions = {
     submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
-    setPrizePool: (pp: string) => void;
-    setHits: (h: string[][]) => void;
-    setMisses: (m: string[][]) => void;
-    setGraveyard: (g: boolean[]) => void;
-    setLastGuessCoords: (g: string[]) => void;
+    setPrizePool: (prizePool: string) => void;
+    setHits: (hits: string[][]) => void;
+    setMisses: (misses: string[][]) => void;
+    setGraveyard: (graveyard: boolean[]) => void;
+    setLastGuessCoords: (guessedCoords: string[]) => void;
 };
 
 export type ContractStore = ContractState & ContractActions;
@@ -57,6 +58,7 @@ export const useContractStore = create<ContractStore>(
             lastError: '',
             lastGuessCoords: null,
             previousContractAddresses: [],
+            lastReward: 0,
 
             submitGuess: async (x: number, y: number) => {
                 const signer = useWalletStore.getState().signer;
@@ -87,7 +89,8 @@ export const useContractStore = create<ContractStore>(
                     const receipt = await submitTx.wait();
 
                     addNewMessage('Issued Guess tx: ' + receipt.hash);
-                    const hitFeedbackLog = receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
+                    const hitFeedbackLog =
+                        receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
 
                     const {
                         allHits,
@@ -96,27 +99,33 @@ export const useContractStore = create<ContractStore>(
                         success,
                         sunk,
                         guessedCoords,
-                        zenTransferred
+                        zenTransferred,
                     } = hitFeedbackLog.args.toObject();
 
-                    addPlayToGameContract(import.meta.env.VITE_CONTRACT_ADDRESS, success, sunk, zenTransferred);
+                    addPlayToGameContract(
+                        import.meta.env.VITE_CONTRACT_ADDRESS,
+                        success,
+                        sunk,
+                        zenTransferred
+                    );
 
                     get().setHits(allHits);
                     get().setMisses(allMisses);
                     get().setGraveyard(graveyard);
                     set({ guessState: success ? 'HIT' : 'MISS' });
+                    set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
-                    console.error(error)
+                    console.error(error);
                     const e = error as { reason?: string };
-                    const formattedError = formatMetaMaskError(error)
+                    const formattedError = formatMetaMaskError(error);
 
                     set({ guessState: 'ERROR' });
 
-                    if (formattedError !== "Unknown error") {
+                    if (formattedError !== 'Unknown error') {
                         addNewMessage(formattedError, 'ERROR');
 
-                        if (formattedError.includes("insufficient funds")){
+                        if (formattedError.includes('insufficient funds')) {
                             set({ guessState: 'INSUFFICIENT_FUNDS' });
                         }
 

@@ -7,6 +7,7 @@ import { Eip1193Provider } from 'ethers/src.ts/providers/provider-browser';
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
 import CellsRemaining from '@/components/CellsRemaining/CellsRemaining';
 import ClaimPrizeWindow from '@/components/ClaimPrizeWindow/ClaimPrizeWindow';
+import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 import GameStats from '@/components/GameStats/GameStats';
 import Graveyard from '@/components/Graveyard/Graveyard';
 import HelpWindow from '@/components/HelpWindow/HelpWindow';
@@ -21,7 +22,6 @@ import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 import './App.css';
-import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 
 const queryClient = new QueryClient();
 

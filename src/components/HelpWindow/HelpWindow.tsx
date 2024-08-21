@@ -1,5 +1,6 @@
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
+import { FINAL_SINK_REWARD, HIT_REWARD, PLAY_TOKEN_SYMBOL, SINK_REWARD } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
 
 export default function HelpWindow() {
@@ -30,40 +31,49 @@ export default function HelpWindow() {
 
                 <div className="mb-4">
                     <h2 className="text-xl font-semibold mb-2">Grid Visibility</h2>
-                    <ul className="list-disc list-inside">
-                        <li>The game grid is hidden until you make a guess.</li>
-                        <li>
-                            After each guess, the grid will be updated to reflect the latest game
-                            state.
-                        </li>
-                        <li>The board updates only after each guess is made.</li>
-                    </ul>
+                    <p className="text-sm mt-2">The game grid is hidden until you make a guess.</p>
+                    <p className="text-sm mt-2">
+                        After each guess, the grid will be updated to reflect the latest game state.
+                    </p>
+                    <p className="text-sm mt-2">The board updates only after each guess is made.</p>
                 </div>
 
                 <div className="mb-4">
                     <h2 className="text-xl font-semibold mb-2">Guessing and Placement</h2>
-                    <ul className="list-disc list-inside">
+                    <p className="text-sm mt-2">
+                        If you try to guess a cell that has already been chosen by another player,
+                        your guess will be invalid, and the transaction will be cancelled.
+                    </p>
+                </div>
+
+                <div className="mb-4">
+                    <h2 className="text-xl font-semibold mb-2">Rewards</h2>
+                    <p className="text-sm">
+                        Each time a player hits a ship they are rewarded with a {PLAY_TOKEN_SYMBOL}{' '}
+                        token.
+                    </p>
+                    <ul className="list-inside mt-2">
                         <li>
-                            If you try to guess a cell that has already been chosen by another
-                            player, your guess will be invalid, and the transaction will be
-                            cancelled.
+                            Hit a ship - {HIT_REWARD} {PLAY_TOKEN_SYMBOL}
+                        </li>
+                        <li>
+                            Sink a ship - {SINK_REWARD} {PLAY_TOKEN_SYMBOL}
+                        </li>
+                        <li>
+                            Sink the final ship - {FINAL_SINK_REWARD} {PLAY_TOKEN_SYMBOL}
                         </li>
                     </ul>
                 </div>
 
                 <div className="mb-4">
-                    <h2 className="text-xl font-semibold mb-2">Prize Pool</h2>
-                    <ul className="list-disc list-inside">
-                        <li>Each time a player makes a guess, the prize pool increases.</li>
-                        <li>
-                            Once all ships have been sunk, the prize pool will be distributed among
-                            the players.
-                        </li>
-                        <li>
-                            The distribution of the prize pool will be based on the number of ships
-                            each player has sunk.
-                        </li>
-                    </ul>
+                    <h2 className="text-xl font-semibold mb-2">
+                        {PLAY_TOKEN_SYMBOL} TOKEN CONTRACT ADDRESS
+                    </h2>
+                    <p className="text-sm">
+                        To see the token balance in your wallet you'll need to import the token into
+                        Metamask
+                    </p>
+                    <code className="mt-2">{import.meta.env.VITE_ZEN_CONTRACT_ADDRESS}</code>
                 </div>
             </div>
         </HudWindow>

@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { JsonRpcSigner } from 'ethers/lib.commonjs/providers/provider-jsonrpc';
 
 import Button from '@/components/Button/Button';
 import shortenAddress from '@/helpers/shortenAddress';
 import claimPrize from '@/lib/claimPrize';
 import getGameOverStatus from '@/lib/getGameOverStatus';
 import getPersonalStats from '@/lib/getPersonalStats';
-import { JsonRpcSigner } from 'ethers/lib.commonjs/providers/provider-jsonrpc';
 
 type Props = {
     contractAddress: string;
@@ -65,7 +65,15 @@ export default function ClaimPrizeWindowPreviousGameRow({ contractAddress, signe
             <td className="text-sm text-nowrap">{gameOverStatus ? 'GAME OVER' : 'IN PROGRESS'}</td>
             <td>{parseInt(stats[0])}</td>
             <td>{parseInt(stats[1])}</td>
-            <td className="text-nowrap text-center">{gameOverStatus ? <Button variant="hoverBorder" onClick={handleClaim}>CLAIM PRIZE</Button> : '-'}</td>
+            <td className="text-nowrap text-center">
+                {gameOverStatus ? (
+                    <Button variant="hoverBorder" onClick={handleClaim}>
+                        CLAIM PRIZE
+                    </Button>
+                ) : (
+                    '-'
+                )}
+            </td>
         </tr>
     );
 }

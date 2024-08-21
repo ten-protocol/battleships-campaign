@@ -5,8 +5,8 @@ import { useWalletStore } from '@/stores/walletStore';
 
 export default function GameStats() {
     const isConnected = useWalletStore((state) => state.isConnected);
-    const getCurrentGame = usePlayTrackerStore((state) => state.getCurrentGame);
-    const playData = getCurrentGame();
+    const games = usePlayTrackerStore((state) => state.games);
+    const playData = games[import.meta.env.VITE_CONTRACT_ADDRESS];
 
     return (
         <HudWindow
