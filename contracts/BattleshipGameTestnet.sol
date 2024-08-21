@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract BattleshipGame {
+contract BattleshipGameTestnet {
     uint8 constant gridSize = 100;
     uint8 constant totalShips = 249;
     uint8 constant shipLength = 3;

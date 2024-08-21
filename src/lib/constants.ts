@@ -1,15 +1,16 @@
-export const MOVE_FEE: string = '0.0443';
+export const MOVE_FEE: string = '0.00443';
 export const HEX_WIDTH = 32;
 export const HEX_HEIGHT = 32;
 export const VERTICAL_OFFSET = 8;
 export const HORIZONTAL_OFFSET = 0;
-export const DRAW_THRESHOLD = 100;
-export const CONTAINER_WIDTH = 600;
 export const CONTAINER_HEIGHT = 500;
 export const COLS = 100;
 export const ROWS = 100;
 export const HEX_GRID_MARGIN = 32;
 export const SHIP_SIZE = 3;
 export const TEN_CHAIN_ID = '0x1bb';
-//TODO: Replace with correct url
 export const FAUCET_URL = "https://ten-web-faucet.vercel.app/"
+export const PLAY_TOKEN_SYMBOL = "ZEN"
+export const HIT_REWARD = 1
+export const SINK_REWARD = 3
+export const FINAL_SINK_REWARD = 20

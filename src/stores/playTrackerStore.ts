@@ -7,6 +7,7 @@ export type PlayData = {
     misses: number;
     shipsSunk: number;
     redeemed: boolean;
+    rewardedTokens: number;
 };
 
 export type PlayTrackerState = {
@@ -14,8 +15,8 @@ export type PlayTrackerState = {
 };
 
 export type PlayTrackerActions = {
-    addNewGameContract: (a: string) => void;
-    addPlayToGameContract: (a: string, s: boolean, ss: boolean) => void;
+    addNewGameContract: (address: string) => void;
+    addPlayToGameContract: (address: string, success: boolean, shipSunk: boolean, rewardedTokens: string) => void;
     getCurrentGame: () => PlayData | undefined;
 };
 
@@ -36,6 +37,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                         misses: 0,
                         shipsSunk: 0,
                         redeemed: false,
+                        rewardedTokens: 0
                     };
 
                     set({
@@ -44,7 +46,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                 }
             },
 
-            addPlayToGameContract: (address: string, success: boolean, shipSunk: boolean) => {
+            addPlayToGameContract: (address: string, success: boolean, shipSunk: boolean, rewardedTokens: string) => {
                 if (!get().games[address]) {
                     throw new Error('Cannot find current game in play-tracker store.');
                 }
@@ -57,6 +59,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
 
                 if (success) {
                     newState[address].hits++;
+                    newState[address].rewardedTokens += parseInt(rewardedTokens);
                 } else {
                     newState[address].misses++;
                 }
