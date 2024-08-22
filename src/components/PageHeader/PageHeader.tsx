@@ -11,7 +11,7 @@ export default function PageHeader() {
     };
 
     return (
-        <div className="flex mb-10 mt-5 justify-between">
+        <div className="flex flex-col sm:flex-row mt-5 justify-between">
             <img src={logo} alt="test" width={120} />
             <div className="flex gap-4">
                 <Button variant="hoverBorder" onClick={handleShowGameRules}>
