@@ -40,7 +40,7 @@ export default function ClaimPrizeWindow() {
                             <th>CONTRACT</th>
                             <th>STATUS</th>
                             <th>PLAYS</th>
-                            <th>SUNK</th>
+                            <th>DESTROYED</th>
                             <th>ACTIONS</th>
                         </tr>
                     </thead>

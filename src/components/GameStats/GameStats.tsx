@@ -25,7 +25,7 @@ export default function GameStats() {
             <div>
                 <p className="text-sm">HITS: {playData?.hits} </p>
                 <p className="text-sm">MISSES: {playData?.misses}</p>
-                <p className="text-sm">SUNK: {playData?.shipsSunk}</p>
+                <p className="text-sm">DESTROYED: {playData?.shipsSunk}</p>
             </div>
         </HudWindow>
     );
