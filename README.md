@@ -11,7 +11,8 @@ Add the following env vars...
 ```
 USER_KEY=<KEY>
 PRIVATE_KEY=<KEY>
-CONTRACT_ADDRESS=<CONTRACT ADDRESS>
+VITE_CONTRACT_ADDRESS=<CONTRACT ADDRESS>
+VITE_ZEN_CONTRACT_ADDRESS=<ZEN CONTRACT ADDRESS>
 ```
 
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`

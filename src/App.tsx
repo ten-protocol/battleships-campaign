@@ -15,6 +15,7 @@ import MessageLog from '@/components/MessageLog/MessageLog';
 import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
+import SocialShare from '@/components/SocialShare/SocialShare';
 import { TEN_CHAIN_ID } from '@/lib/constants';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
@@ -113,6 +114,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
             <div className="py-2 px-6">
                 <PageHeader />
+                <SocialShare />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
                     <div className="order-2 lg:order-1">
                         <Graveyard />

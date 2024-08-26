@@ -27,10 +27,6 @@ export default function ProcessingNotification() {
         resetGuessState();
     };
 
-    const handleFreePlays = () => {
-        handleClose();
-    };
-
     const CloseButton = <Button onClick={handleClose}>Close</Button>;
 
     if (guessState === 'IDLE') return null;
@@ -61,17 +57,13 @@ export default function ProcessingNotification() {
             <div className="flex flex-col items-start">
                 <p className="text-lg bg-red-600 inline-block px-1">Insufficient funds</p>
                 <p className="text-sm mt-2">
-                    At least {MOVE_FEE} of ETH or 1 HIT token is required to play.
+                    At least {MOVE_FEE} of ETH is required to play.
                 </p>
-                <p className="text-sm mt-2">Get more tokens from one of the sources below.</p>
+                <p className="text-sm mt-2">Get more from the faucet (link below).</p>
                 <div className="mt-8 flex gap-4 w-full justify-center">
                     <a href={FAUCET_URL} target="_blank">
                         <Button variant="light">TEN Faucet</Button>
                     </a>
-
-                    <Button variant="light" onClick={handleFreePlays}>
-                        FREE PLAYS
-                    </Button>
                 </div>
             </div>
         );
