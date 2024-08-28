@@ -56,9 +56,7 @@ export default function ProcessingNotification() {
         bodyContent = (
             <div className="flex flex-col items-start">
                 <p className="text-lg bg-red-600 inline-block px-1">Insufficient funds</p>
-                <p className="text-sm mt-2">
-                    At least {MOVE_FEE} of ETH is required to play.
-                </p>
+                <p className="text-sm mt-2">At least {MOVE_FEE} of ETH is required to play.</p>
                 <p className="text-sm mt-2">Get more from the faucet (link below).</p>
                 <div className="mt-8 flex gap-4 w-full justify-center">
                     <a href={FAUCET_URL} target="_blank">

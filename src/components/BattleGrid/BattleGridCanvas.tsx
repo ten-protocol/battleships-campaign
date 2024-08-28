@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { Container, Stage } from '@pixi/react';
+import { Application, ICanvas } from 'pixi.js';
 
 import BattleGridBackgroundCells from '@/components/BattleGrid/BattleGridBackgoundCells';
 import CellHighlight from '@/components/CellHighlight/CellHighlight';
@@ -9,9 +12,6 @@ import BattleGridExplosion from './BattleGridExplosion';
 import BattleGridHits from './BattleGridHits';
 import BattleGridMisses from './BattleGridMisses';
 import BattleGridUnknowns from './BattleGridUnknowns';
-import { useEffect, useState } from 'react';
-import { Application, ICanvas } from 'pixi.js';
-
 
 export default function BattleGridCanvas() {
     const [app, setApp] = useState<Application<ICanvas>>();
