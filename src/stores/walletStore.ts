@@ -12,6 +12,7 @@ export type WalletState = {
     address: string | null;
     isConnected: boolean;
     ethBalance: number;
+    playTokenBalance: number;
     chainId: string | null;
 };
 
@@ -20,6 +21,7 @@ export type WalletActions = {
     setAddress: (address: string | null) => void;
     handleNetworkChange: (chainId: string) => void;
     setEthBalance: (balance: number) => void;
+    setPlayTokenBalance: (balance: number) => void;
 };
 
 export type WalletStore = WalletState & WalletActions;
@@ -30,6 +32,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
     address: null,
     isConnected: false,
     ethBalance: 0,
+    playTokenBalance: 0,
     chainId: null,
 
     setProvider: async (provider, chainId) => {
@@ -48,6 +51,7 @@ export const useWalletStore = create<WalletStore>((set) => ({
     },
     setAddress: (address) => set({ address }),
     setEthBalance: (balance) => set({ ethBalance: balance }),
+    setPlayTokenBalance: (balance) => set({ playTokenBalance: balance }),
 
     handleNetworkChange: (chainId: string) => {
         set({

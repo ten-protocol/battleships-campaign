@@ -17,6 +17,7 @@ import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
 import SocialShare from '@/components/SocialShare/SocialShare';
 import { TEN_CHAIN_ID } from '@/lib/constants';
+import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
@@ -81,7 +82,9 @@ function App() {
                 setInitialized(true);
 
                 trackEvent('connect_wallet', {
-                    value: accounts[0],
+                    connected_wallet_address: accounts[0],
+                    connected_wallet_type: 'Metamask',
+                    wallet_types: getWalletUserWallets(),
                 });
             } else {
                 addNewMessage('Please install MetaMask!', 'ERROR');
