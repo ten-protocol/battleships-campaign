@@ -6,6 +6,8 @@ import BattleshipGameJson from '@/assets/contract/artifacts/contracts/Battleship
 import getCellXY from '@/helpers/getCellXY';
 import { MOVE_FEE } from '@/lib/constants';
 import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
+import getWalletUserWallets from '@/lib/getUserWallets';
+import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
@@ -65,7 +67,10 @@ export const useContractStore = create<ContractStore>(
                 const addNewMessage = useMessageStore.getState().addNewMessage;
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
 
-                console.log(x, y);
+                trackEvent('guess_placed', {
+                    wallet_address: useWalletStore.getState().address,
+                    wallet_types: getWalletUserWallets(),
+                });
 
                 if (!signer) {
                     throw new Error('No signer available.');
@@ -87,6 +92,11 @@ export const useContractStore = create<ContractStore>(
                     });
                     set({ guessState: 'TRANSACTION_SUCCESS' });
                     const receipt = await submitTx.wait();
+
+                    trackEvent('guess_transaction_success', {
+                        wallet_address: useWalletStore.getState().address,
+                        wallet_types: getWalletUserWallets(),
+                    });
 
                     addNewMessage('Issued Guess tx: ' + receipt.hash);
                     const hitFeedbackLog =
@@ -129,14 +139,26 @@ export const useContractStore = create<ContractStore>(
                             set({ guessState: 'INSUFFICIENT_FUNDS' });
                         }
 
+                        trackEvent('guess_transaction_error', {
+                            wallet_address: useWalletStore.getState().address,
+                            wallet_types: getWalletUserWallets(),
+                            error: formattedError,
+                        });
+
+                        if (formattedError.includes('Cell already hit')) {
+                            useGameStore.getState().addUnknownCell(x, y);
+                        }
+
                         set({ lastError: formattedError });
                     } else {
                         addNewMessage('Failed to issue Guess - ' + e?.reason + ' ...', 'ERROR');
                         set({ lastError: 'Failed to issue Guess - ' + e?.reason });
 
-                        if (e?.reason === 'Cell already hit') {
-                            useGameStore.getState().addUnknownCell(x, y);
-                        }
+                        trackEvent('guess_transaction_error', {
+                            wallet_address: useWalletStore.getState().address,
+                            wallet_types: getWalletUserWallets(),
+                            error: e?.reason,
+                        });
                     }
                 }
             },
