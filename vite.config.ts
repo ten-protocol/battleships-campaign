@@ -11,7 +11,7 @@ export default defineConfig({
         svgr()
     ],
     define: {
-        'import.meta.env.VITE_SITE_URL': process.env.VITE_SITE_URL ? process.env.VITE_SITE_URL : `""`,
+        'import.meta.env.VITE_SITE_URL': `"${process.env.VITE_SITE_URL}"` ? `"${process.env.VITE_SITE_URL}"` : `""`,
     },
     resolve: {
         alias: {
