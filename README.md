@@ -25,7 +25,6 @@ The test version of the contract requires to deploy ZEN first and push it's addr
 ### Install dependencies
 ```npm ci```
 
-
 ### Run dev environment
 `npm run dev`
 
