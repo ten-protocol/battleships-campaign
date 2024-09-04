@@ -57,10 +57,10 @@ export default function HelpWindow() {
                             Hit a ship - {HIT_REWARD} {PLAY_TOKEN_SYMBOL}
                         </li>
                         <li>
-                            Sink a ship - {SINK_REWARD} {PLAY_TOKEN_SYMBOL}
+                            Destroy a ship - {SINK_REWARD} {PLAY_TOKEN_SYMBOL}
                         </li>
                         <li>
-                            Sink the final ship - {FINAL_SINK_REWARD} {PLAY_TOKEN_SYMBOL}
+                            Destroy the final ship - {FINAL_SINK_REWARD} {PLAY_TOKEN_SYMBOL}
                         </li>
                     </ul>
                 </div>
