@@ -12,7 +12,7 @@ export default defineConfig({
         svgr()
     ],
     define: {
-        'import.meta.env.VITE_SITE_URL': process.env.VERCEL_URL ? `"https://${process.env.VERCEL_URL}"` : `""`,
+        'import.meta.env.VITE_SITE_URL': process.env.VITE_SITE_URL ? process.env.VITE_SITE_URL : `""`,
     },
     resolve: {
         alias: {

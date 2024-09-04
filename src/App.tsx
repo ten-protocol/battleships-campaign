@@ -69,7 +69,7 @@ function App() {
             if (provider) {
                 const chainId = await provider.request({ method: 'eth_chainId' });
                 if (chainId !== TEN_CHAIN_ID) {
-                    addNewMessage('Not connected to Ten ! Connect at https://testnet.ten.xyz');
+                    addNewMessage('Not connected to TEN! Connect at https://testnet.ten.xyz');
                 }
                 setProvider(provider, chainId);
 
