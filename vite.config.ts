@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 import Checker from 'vite-plugin-checker';
 import svgr from "vite-plugin-svgr";
 
-// https://vitejs.dev/config/
+
 export default defineConfig({
     plugins: [
         react(),
@@ -12,7 +12,7 @@ export default defineConfig({
         svgr()
     ],
     define: {
-        'import.meta.env.VITE_SITE_URL': process.env.VERCEL_URL ? `"https://${process.env.VERCEL_URL}"` : `""`,
+        'import.meta.env.VITE_SITE_URL': `"${process.env.VITE_SITE_URL}"` ? `"${process.env.VITE_SITE_URL}"` : `""`,
     },
     resolve: {
         alias: {
