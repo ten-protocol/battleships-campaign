@@ -4,7 +4,6 @@ import { defineConfig } from 'vite';
 import Checker from 'vite-plugin-checker';
 import svgr from "vite-plugin-svgr";
 
-// https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         react(),
