@@ -21,14 +21,14 @@ contract BattleshipGameTestnet {
         bool[shipLength] hits;
     }
 
-    Ship[totalShips] public ships;
+    Ship[totalShips] private ships;
     mapping(uint16 => uint8) private positionToShipIndex;
-    mapping(uint16 => bool) public hits;
+    mapping(uint16 => bool) private hits;
     mapping(uint16 => bool) private misses;
     uint256 private seed;
     uint256 private nonce = 0;
-    bool[totalShips] public graveyard;
-    uint8 public sunkShipsCount;
+    bool[totalShips] private graveyard;
+    uint8 private sunkShipsCount;
     bool public gameOver;
     Position[] private allHits;
     Position[] private allMisses;
