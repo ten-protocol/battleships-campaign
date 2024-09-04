@@ -87,22 +87,6 @@ contract BattleshipGameTestnet {
         return (uint16(x) << 8) | uint16(y);
     }
 
-    function getShipPosition(uint8 shipIndex) public view returns (Position memory) {
-        require(shipIndex - 1 < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex - 1].start;
-    }
-
-    function getAllShipPositions() public view returns (Ship[totalShips] memory) {
-        return ships;
-    }
-
-    function getShipAtPosition(uint8 x, uint8 y) public view returns (uint8) {
-        uint16 positionKey = packCoordinates(x, y);
-        uint8 shipIndex = positionToShipIndex[positionKey];
-        require(shipIndex != 0, 'No ship at given position');
-        return shipIndex;
-    }
-
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, 'Game is over, no more hits accepted');
         require(msg.value == 0.00443 ether, 'Incorrect fee amount');
@@ -166,33 +150,6 @@ contract BattleshipGameTestnet {
         }
 
         emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred);
-    }
-
-    function isHit(uint8 x, uint8 y) public view returns (bool) {
-        uint16 positionKey = packCoordinates(x, y);
-        return hits[positionKey];
-    }
-
-    function isSunk(uint8 shipIndex) public view returns (bool) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return graveyard[shipIndex];
-    }
-
-    function getHitsOnShip(uint8 shipIndex) public view returns (bool[shipLength] memory) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex].hits;
-    }
-
-    function getGraveyard() public view returns (bool[totalShips] memory) {
-        return graveyard;
-    }
-
-    function getAllHits() public view returns (Position[] memory) {
-        return allHits;
-    }
-
-    function getAllMisses() public view returns (Position[] memory) {
-        return allMisses;
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
