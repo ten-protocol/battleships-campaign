@@ -12,7 +12,7 @@ export default function GameStats() {
         <HudWindow
             headerTitle="GAME STATS"
             isOpen={isConnected}
-            closedContent={<p className="text-center">System Offline</p>}
+            closedContent={<p className="text-center">Initialization Required</p>}
             footerContent={
                 <div className="text-right">
                     <p className="text-xl">

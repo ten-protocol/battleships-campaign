@@ -4,7 +4,7 @@ import styles from './styles.module.scss';
 
 type Props = {
     onClick?: () => void;
-    variant?: 'light' | 'dark' | 'hoverBorder';
+    variant?: 'light' | 'dark' | 'hoverBorder' | 'hoverBorderRed';
     children?: ReactNode;
     className?: string;
 };

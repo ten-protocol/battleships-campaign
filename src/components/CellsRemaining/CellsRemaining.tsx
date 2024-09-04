@@ -12,7 +12,7 @@ export default function CellsRemaining() {
     const numberOfRevealedCells = misses.length + hits.length;
     const totalCells = ROWS * COLS;
     const unknownState = misses.length + hits.length === 0;
-    const Disconnected = <p className="text-center">System Offline</p>;
+    const Disconnected = <p className="text-center">Initialization Required</p>;
 
     return (
         <HudWindow headerTitle={'Cells'} isOpen={isConnected} closedContent={Disconnected}>

@@ -50,13 +50,13 @@ export default function BattleGrid() {
     const Disconnected = (
         <div className="text-center w-screen max-w-full">
             <div className="p-8">
-                <p className="text-2xl mb-8">SYSTEM OFFLINE.</p>
+                <p className="text-2xl mb-8">System Initialization Required</p>
 
                 <div className="flex flex-col justify-center border-l-stone-50 border p-4">
                     {!chainId && (
                         <Button
                             className="mb-4 self-center"
-                            variant="hoverBorder"
+                            variant="hoverBorderRed"
                             onClick={connectAccount}
                         >
                             Connect Wallet
