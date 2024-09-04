@@ -10,15 +10,23 @@ import { trackEvent } from '@/lib/trackEvent';
 import { useWalletStore } from '@/stores/walletStore';
 
 export default function MetaMaskWalletBalance() {
-    const [address, ethBalance, setEthBalance, provider, playTokenBalance, setPlayTokenBalance] =
-        useWalletStore((state) => [
-            state.address,
-            state.ethBalance,
-            state.setEthBalance,
-            state.provider,
-            state.playTokenBalance,
-            state.setPlayTokenBalance,
-        ]);
+    const [
+        address,
+        ethBalance,
+        setEthBalance,
+        provider,
+        playTokenBalance,
+        setPlayTokenBalance,
+        isConnected,
+    ] = useWalletStore((state) => [
+        state.address,
+        state.ethBalance,
+        state.setEthBalance,
+        state.provider,
+        state.playTokenBalance,
+        state.setPlayTokenBalance,
+        state.isConnected,
+    ]);
     const [playTokenAddedToWallet, setPlayTokenAddedToWallet] = useState(false);
     const [updateIteration, setUpdateIteration] = useState(0);
 
@@ -56,6 +64,10 @@ export default function MetaMaskWalletBalance() {
             wallet_types: getWalletUserWallets(),
         });
     };
+
+    if (!isConnected) {
+        return <p className="text-center">Wallet not connected.</p>;
+    }
 
     return (
         <div>

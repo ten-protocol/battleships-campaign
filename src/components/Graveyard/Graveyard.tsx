@@ -38,7 +38,7 @@ export default function Graveyard() {
             headerTitle="Enemy Fleet"
             isOpen={isConnected}
             footerContent={Footer}
-            closedContent={<p className="text-center">System Offline</p>}
+            closedContent={<p className="text-center">Initialization Required</p>}
         >
             {unknownState ? (
                 <h3 className="text-lg text-center my-3">No Data</h3>
