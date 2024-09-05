@@ -61,6 +61,7 @@ function App() {
             }
         };
     }, [address]);
+    
 
     const connectToMetaMask = async () => {
         try {
