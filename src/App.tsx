@@ -65,13 +65,15 @@ function App() {
     const connectToMetaMask = async () => {
         try {
             const provider: Eip1193Provider | null = await detectEthereumProvider();
-            //TODO: If we want to only support metamask there is a 'isMetaMask' property on the provider object
-            if (provider) {
+
+            if (provider && window.ethereum?.isMetaMask) {
                 const chainId = await provider.request({ method: 'eth_chainId' });
+                setProvider(provider, chainId);
+
                 if (chainId !== TEN_CHAIN_ID) {
                     addNewMessage('Not connected to TEN! Connect at https://testnet.ten.xyz');
+                    return
                 }
-                setProvider(provider, chainId);
 
                 const accounts = await provider.request({
                     method: 'eth_requestAccounts',

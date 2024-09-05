@@ -7,6 +7,7 @@ import AnimatedText from '@/components/AnimatedText/AnimatedText';
 import BattleGridEdgeArrows from '@/components/BattleGrid/BattleGridEdgeArrows';
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
+import { TEN_CHAIN_ID } from '@/lib/constants';
 import { useMessageStore } from '@/stores/messageStore';
 import { useWalletStore } from '@/stores/walletStore';
 
@@ -14,8 +15,8 @@ import BattleGridContainer from './BattleGridContainer';
 import BattleGridCurrentCoordinates from './BattleGridCurrentCoordinates';
 
 export default function BattleGrid() {
-    const [isConnected, setAddress, chainId] = useWalletStore(
-        useShallow((state) => [state.isConnected, state.setAddress, state.chainId])
+    const [isConnected, setAddress, chainId, address] = useWalletStore(
+        useShallow((state) => [state.isConnected, state.setAddress, state.chainId, state.address])
     );
     const addNewMessage = useMessageStore((state) => state.addNewMessage);
     const [displayGrid, setDisplayGrid] = useState(false);
@@ -52,6 +53,18 @@ export default function BattleGrid() {
         <div className="text-center w-screen max-w-full">
             <div className="p-8">
                 <p className="text-2xl mb-8">System Initialization Required</p>
+
+                {address && chainId !== TEN_CHAIN_ID && (
+                    <p className="text-center text-xl -mt-4 mb-4">
+                        You're connected to the incorrect chain
+                    </p>
+                )}
+                {!window.ethereum?.isMetaMask && (
+                    <>
+                        <p className="text-center text-xl -mt-4">MetaMask required.</p>
+                        <p className="text-zinc-200 text-center text-sm mb-4">If you already have MetaMask installed but are reading this message, make sure you disable any other wallet providers. </p>
+                    </>
+                )}
 
                 <div className="flex flex-col justify-center border-l-stone-50 border p-4">
                     {!chainId && (

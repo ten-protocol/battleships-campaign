@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 
 import Button from '@/components/Button/Button';
 import addPlayTokenToWallet from '@/lib/addPlayTokenToWallet';
-import { FAUCET_URL, MOVE_FEE, PLAY_TOKEN_SYMBOL } from '@/lib/constants';
+import { FAUCET_URL, MOVE_FEE, PLAY_TOKEN_SYMBOL, TEN_CHAIN_ID } from '@/lib/constants';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useWalletStore } from '@/stores/walletStore';
@@ -18,6 +18,7 @@ export default function MetaMaskWalletBalance() {
         playTokenBalance,
         setPlayTokenBalance,
         isConnected,
+        chainId,
     ] = useWalletStore((state) => [
         state.address,
         state.ethBalance,
@@ -26,6 +27,7 @@ export default function MetaMaskWalletBalance() {
         state.playTokenBalance,
         state.setPlayTokenBalance,
         state.isConnected,
+        state.chainId,
     ]);
     const [playTokenAddedToWallet, setPlayTokenAddedToWallet] = useState(false);
     const [updateIteration, setUpdateIteration] = useState(0);
@@ -65,8 +67,12 @@ export default function MetaMaskWalletBalance() {
         });
     };
 
+    if (address && chainId !== TEN_CHAIN_ID) {
+        return <p className="text-center">Incorrect chain</p>;
+    }
+
     if (!isConnected) {
-        return <p className="text-center">Wallet not connected.</p>;
+        return <p className="text-center">MetaMask not connected.</p>;
     }
 
     return (

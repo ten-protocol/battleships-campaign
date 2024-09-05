@@ -1,17 +1,12 @@
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-
-
 import getCellCoordsFromXY from '@/helpers/getCellCoordsFromXY';
 import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
 
-
-
 import { useContractStore } from './contractStore';
-
 
 export type Cell = {
     row: number;
