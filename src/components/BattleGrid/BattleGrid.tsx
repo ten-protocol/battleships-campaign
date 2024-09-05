@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
 
 import AnimatedText from '@/components/AnimatedText/AnimatedText';
+import BattleGridEdgeArrows from '@/components/BattleGrid/BattleGridEdgeArrows';
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
 import { useMessageStore } from '@/stores/messageStore';
@@ -100,6 +101,7 @@ export default function BattleGrid() {
             <div className="w-screen max-w-full" style={{ height: 524 }}>
                 {displayGrid ? (
                     <motion.div {...animation}>
+                        <BattleGridEdgeArrows />
                         <BattleGridContainer />
                         <BattleGridCurrentCoordinates />
                     </motion.div>

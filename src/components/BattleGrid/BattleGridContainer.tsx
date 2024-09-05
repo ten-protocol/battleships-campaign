@@ -1,4 +1,4 @@
-import { MouseEvent, useEffect, useRef } from 'react';
+import { MouseEvent, UIEvent, useEffect, useRef } from 'react';
 
 import { COLS, CONTAINER_HEIGHT, ROWS } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
@@ -17,6 +17,7 @@ export default function BattleGridContainer() {
     const setHoveredCell = useGameStore((state) => state.setHoveredCell);
     const initGrid = useGameStore((state) => state.initGrid);
     const selectCell = useGameStore((state) => state.selectCell);
+    const setScrollPosition = useGameStore((state) => state.setScrollPosition);
 
     useEffect(() => {
         initGrid(COLS, ROWS);
@@ -40,12 +41,22 @@ export default function BattleGridContainer() {
         selectCell();
     };
 
+    const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+        const { scrollLeft, scrollTop, clientWidth, clientHeight, scrollHeight, scrollWidth } =
+            event.currentTarget;
+        const leftScrollPositionPercentage = (scrollLeft / (scrollWidth - clientWidth)) * 100;
+        const topScrollPositionPercentage = (scrollTop / (scrollHeight - clientHeight)) * 100;
+
+        setScrollPosition(leftScrollPositionPercentage, topScrollPositionPercentage);
+    };
+
     return (
         <div
             ref={elementRef}
             style={styles.container}
             onMouseMove={handleMouseMove}
             onClick={handleMouseClick}
+            onScroll={handleScroll}
         >
             <BattleGridCanvas />
         </div>
