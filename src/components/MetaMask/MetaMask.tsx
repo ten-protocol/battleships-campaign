@@ -48,8 +48,8 @@ export default function MetaMask() {
             footerContent={
                 <div className="flex gap-4">
                     <img src={metaMaskLogo} width={50} />
-                    {address ? (
-                        <p>MetaMask Connected</p>
+                    {address && window.ethereum?.isMetaMask ? (
+                        <p>Metamask Connected</p>
                     ) : (
                         <Button variant="light" onClick={connectAccount}>
                             Connect Metamask

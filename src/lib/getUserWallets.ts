@@ -24,6 +24,10 @@ export default function getWalletUserWallets(): string[] {
     if (window.phantom?.ethereum) {
         detectedWallets.push('Phantom Wallet');
     }
+    //@ts-ignore
+    if (window.ethereum?.isStarKeyWallet) {
+        detectedWallets.push('StarKey Wallet');
+    }
 
     if (window.ethereum && detectedWallets.length === 0) {
         detectedWallets.push('Unknown Wallet');
