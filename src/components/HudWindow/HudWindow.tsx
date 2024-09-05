@@ -77,14 +77,14 @@ export default function HudWindow({
     };
 
     const modalClass = classNames({
-        'absolute inset-0 flex justify-center items-center  -mt-40': modalMode,
+        'absolute inset-0 flex justify-center items-center': modalMode,
         'bg-translucentBg': !transparentOverlay,
     });
 
     return (
         <AnimatePresence>
             <div className={modalClass}>
-                <section className="relative p-2 backdrop-blur bg-translucentBg">
+                <section className="relative p-2 backdrop-blur bg-translucentBg max-w-[100vw] max-h-[100vh]">
                     <motion.div {...topDecorationAnimation} className={styles.topLeftDecoration} />
                     <motion.div {...headerAnimation}>
                         <header className={`px-2 mb-2 bg-white text-black ${styles.glow}`}>
@@ -94,7 +94,14 @@ export default function HudWindow({
 
                     {!isOpen && <motion.div {...closedScreenAnimation}>{closedContent}</motion.div>}
 
-                    {isOpen && <motion.div {...contentAnimation}>{children}</motion.div>}
+                    {isOpen && (
+                        <motion.div
+                            className="overflow-auto max-h-[calc(100vh-110px)]"
+                            {...contentAnimation}
+                        >
+                            {children}
+                        </motion.div>
+                    )}
 
                     {footerContent && isOpen && (
                         <>
