@@ -62,7 +62,10 @@ export default function BattleGrid() {
                 {!window.ethereum?.isMetaMask && (
                     <>
                         <p className="text-center text-xl -mt-4">MetaMask required.</p>
-                        <p className="text-zinc-200 text-center text-sm mb-4">If you already have MetaMask installed but are reading this message, make sure you disable any other wallet providers. </p>
+                        <p className="text-zinc-200 text-center text-sm mb-4">
+                            If you already have MetaMask installed but are reading this message,
+                            make sure you disable any other wallet providers.{' '}
+                        </p>
                     </>
                 )}
 

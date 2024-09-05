@@ -72,7 +72,7 @@ function App() {
 
                 if (chainId !== TEN_CHAIN_ID) {
                     addNewMessage('Not connected to TEN! Connect at https://testnet.ten.xyz');
-                    return
+                    return;
                 }
 
                 const accounts = await provider.request({
