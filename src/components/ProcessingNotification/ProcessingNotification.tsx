@@ -134,7 +134,7 @@ export default function ProcessingNotification() {
     };
 
     return (
-        <div className="inset-0 absolute -mt-60">
+        <div className="absolute inset-x-0 h-fit top-[300px]">
             <HudWindow
                 headerTitle="Striking coordinates"
                 speed={0.1}
@@ -161,7 +161,7 @@ export default function ProcessingNotification() {
                         animate="animate"
                         exit="exit"
                         variants={variants}
-                        className="py-2 w-96"
+                        className="py-2 w-96 max-w-full"
                     >
                         {bodyContent}
                     </motion.div>

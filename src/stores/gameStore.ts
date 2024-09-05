@@ -1,12 +1,17 @@
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+
+
 import getCellCoordsFromXY from '@/helpers/getCellCoordsFromXY';
 import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
 
+
+
 import { useContractStore } from './contractStore';
+
 
 export type Cell = {
     row: number;
@@ -36,6 +41,7 @@ export type GameActions = {
     setHoveredCell: (x: number, y: number) => void;
     selectCell: () => void;
     setRevealedCells: (cells: string[][], type: RevealedCellType) => void;
+    setScrollPosition: (x: number, y: number) => void;
     setSingleRevealedCell: (x: number, y: number, type: RevealedCellType) => void;
     addUnknownCell: (x: number, y: number) => void;
     clearUnknownCells: () => void;
@@ -111,6 +117,10 @@ export const useGameStore = create<GameStore>(
                 }
 
                 set({ revealedCells: newRevealedCells });
+            },
+
+            setScrollPosition: (x: number, y: number) => {
+                set({ scrollPosition: [x, y] });
             },
 
             setSingleRevealedCell: (x: number, y: number, type: 'HIT' | 'MISS' | 'UNKNOWN') => {
