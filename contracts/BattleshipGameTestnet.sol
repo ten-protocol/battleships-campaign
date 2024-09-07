@@ -91,8 +91,12 @@ contract BattleshipGameTestnet {
         require(!gameOver, 'Game is over, no more hits accepted');
         require(msg.value == 0.00443 ether, 'Incorrect fee amount');
         uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        _processHit(msg.sender, x, y);
+
+        if (hits[positionKey]) {
+            payable(msg.sender).transfer(msg.value);
+            emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0);
+        } else {
+            _processHit(msg.sender, x, y);
     }
 
     function _processHit(address player, uint8 x, uint8 y) private {
