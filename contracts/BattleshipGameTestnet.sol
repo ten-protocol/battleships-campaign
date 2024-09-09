@@ -97,6 +97,7 @@ contract BattleshipGameTestnet {
             emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0);
         } else {
             _processHit(msg.sender, x, y);
+        }
     }
 
     function _processHit(address player, uint8 x, uint8 y) private {
