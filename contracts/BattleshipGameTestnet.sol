@@ -102,7 +102,6 @@ contract BattleshipGameTestnet {
 
     function _processHit(address player, uint8 x, uint8 y) private {
         uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
