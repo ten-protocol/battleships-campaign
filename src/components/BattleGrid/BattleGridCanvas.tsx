@@ -11,7 +11,6 @@ import BattleGridCursor from './BattleGridCursor';
 import BattleGridExplosion from './BattleGridExplosion';
 import BattleGridHits from './BattleGridHits';
 import BattleGridMisses from './BattleGridMisses';
-import BattleGridUnknowns from './BattleGridUnknowns';
 
 export default function BattleGridCanvas() {
     const [app, setApp] = useState<Application<ICanvas>>();
@@ -54,7 +53,6 @@ export default function BattleGridCanvas() {
         >
             <Container>
                 <BattleGridBackgroundCells />
-                <BattleGridUnknowns />
                 <BattleGridMisses />
                 <BattleGridHits />
             </Container>

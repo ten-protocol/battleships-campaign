@@ -1,73 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
-import { ethers } from 'ethers';
+import { Address } from 'viem';
+import { useAccount, useBalance, useChainId } from 'wagmi';
 
 import Button from '@/components/Button/Button';
-import addPlayTokenToWallet from '@/lib/addPlayTokenToWallet';
 import { FAUCET_URL, MOVE_FEE, PLAY_TOKEN_SYMBOL, TEN_CHAIN_ID } from '@/lib/constants';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useWalletStore } from '@/stores/walletStore';
 
 export default function MetaMaskWalletBalance() {
-    const [
-        address,
-        ethBalance,
-        setEthBalance,
-        provider,
-        playTokenBalance,
-        setPlayTokenBalance,
-        isConnected,
-        chainId,
-    ] = useWalletStore((state) => [
-        state.address,
-        state.ethBalance,
-        state.setEthBalance,
-        state.provider,
-        state.playTokenBalance,
-        state.setPlayTokenBalance,
-        state.isConnected,
-        state.chainId,
+    const [setAddress, setConnector] = useWalletStore((state) => [
+        state.setAddress,
+        state.setConnector,
     ]);
-    const [playTokenAddedToWallet, setPlayTokenAddedToWallet] = useState(false);
-    const [updateIteration, setUpdateIteration] = useState(0);
+    const chainId = useChainId();
+    const { address, isConnected, connector } = useAccount();
+    const { data: ethBalance } = useBalance({
+        address,
+    });
+    const { data: zenBalance } = useBalance({
+        address,
+        token: import.meta.env.VITE_ZEN_CONTRACT_ADDRESS as Address,
+    });
 
     useEffect(() => {
-        (async () => {
-            if (!address || !provider) return;
-            const browserProvider = new ethers.BrowserProvider(provider);
-            const balance = await browserProvider.getBalance(address);
+        setAddress(address as Address);
 
-            const tokenContract = new ethers.Contract(
-                import.meta.env.VITE_ZEN_CONTRACT_ADDRESS,
-                ['function balanceOf(address owner) view returns (uint256)'],
-                browserProvider
-            );
-            const playTokenBalance = await await tokenContract.balanceOf(address);
-            setEthBalance(parseFloat(ethers.formatEther(balance)));
-            setPlayTokenBalance(parseFloat(ethers.formatEther(playTokenBalance)));
+        if (connector) {
+            setConnector(connector?.name);
+        }
+    }, [address]);
 
-            if (!playTokenAddedToWallet && parseFloat(ethers.formatEther(balance)) === 0) {
-                setPlayTokenAddedToWallet(true);
-                await addPlayTokenToWallet();
-            }
-
-            await browserProvider.on('block', async () => {
-                setUpdateIteration(updateIteration + 1);
-            });
-        })();
-    }, [address, provider, updateIteration]);
-
-    const numberOfPlays = Math.floor(ethBalance / parseFloat(MOVE_FEE));
+    const numberOfPlays = ethBalance?.value
+        ? Math.floor(parseFloat(ethBalance.formatted) / parseFloat(MOVE_FEE))
+        : 0;
 
     const trackRequestEvent = () => {
         trackEvent('request_tokens', {
-            wallet_address: useWalletStore.getState().address,
+            wallet_address: address,
             wallet_types: getWalletUserWallets(),
         });
     };
 
-    if (address && chainId !== TEN_CHAIN_ID) {
+    if (isConnected && chainId !== TEN_CHAIN_ID) {
         return <p className="text-center">Incorrect chain</p>;
     }
 
@@ -79,10 +55,11 @@ export default function MetaMaskWalletBalance() {
         <div>
             <h3 className="mb-1">BALANCE</h3>
             <p>
-                {ethBalance.toFixed(3)} ETH <span className="text-sm">({numberOfPlays} PLAYS)</span>
+                {parseFloat(ethBalance?.formatted || '0').toFixed(3)} ETH{' '}
+                <span className="text-sm">({numberOfPlays} PLAYS)</span>
             </p>
             <p>
-                {playTokenBalance} {PLAY_TOKEN_SYMBOL}
+                {zenBalance?.formatted} {PLAY_TOKEN_SYMBOL}
             </p>
 
             {numberOfPlays === 0 && (

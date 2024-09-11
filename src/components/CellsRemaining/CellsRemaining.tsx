@@ -1,14 +1,14 @@
+import { useAccount } from 'wagmi';
 import { useShallow } from 'zustand/react/shallow';
 
 import HudWindow from '@/components/HudWindow/HudWindow';
 import formatNumber from '@/helpers/formatNumber';
 import { COLS, ROWS } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
-import { useWalletStore } from '@/stores/walletStore';
 
 export default function CellsRemaining() {
     const [misses, hits] = useGameStore(useShallow((state) => [state.missedCells, state.hitCells]));
-    const isConnected = useWalletStore((state) => state.isConnected);
+    const { isConnected } = useAccount();
     const numberOfRevealedCells = misses.length + hits.length;
     const totalCells = ROWS * COLS;
     const unknownState = misses.length + hits.length === 0;

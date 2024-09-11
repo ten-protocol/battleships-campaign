@@ -6,7 +6,7 @@ import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
 
-import { useContractStore } from './contractStore';
+import { FeedbackCoords, useContractStore } from './contractStore';
 
 export type Cell = {
     row: number;
@@ -21,28 +21,22 @@ export type GameState = {
     grid: Cell[];
     missedCells: Cell[];
     hitCells: Cell[];
-    unknownCells: Cell[];
     revealedCells: { [key: string]: RevealedCellType };
     hoveredCell: Cell | null;
     scrollPosition: [number, number];
     selectedCell: Cell | null;
     freePlayWindowOpen: boolean;
     helpWindowOpen: boolean;
-    prizeWindowOpen: boolean;
 };
 
 export type GameActions = {
     initGrid: (height: number, width: number) => void;
     setHoveredCell: (x: number, y: number) => void;
     selectCell: () => void;
-    setRevealedCells: (cells: string[][], type: RevealedCellType) => void;
+    setRevealedCells: (cells: FeedbackCoords[], type: RevealedCellType) => void;
     setScrollPosition: (x: number, y: number) => void;
-    setSingleRevealedCell: (x: number, y: number, type: RevealedCellType) => void;
-    addUnknownCell: (x: number, y: number) => void;
-    clearUnknownCells: () => void;
     toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
-    togglePrizeWindow: () => void;
 };
 
 export type GameStore = GameState & GameActions;
@@ -53,7 +47,6 @@ export const useGameStore = create<GameStore>(
             grid: [],
             missedCells: [],
             hitCells: [],
-            unknownCells: [],
             revealedCells: {},
             hoveredCell: null,
             scrollPosition: [0, 0],
@@ -61,7 +54,6 @@ export const useGameStore = create<GameStore>(
             selectedCell: null,
             freePlayWindowOpen: false,
             helpWindowOpen: true,
-            prizeWindowOpen: false,
 
             initGrid: (width: number, height: number) =>
                 set(() => {
@@ -102,10 +94,10 @@ export const useGameStore = create<GameStore>(
                 submitGuess(selectedCell.col, selectedCell.row);
             },
 
-            setRevealedCells: (cells: string[][], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
+            setRevealedCells: (cells: FeedbackCoords[], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
                 const newRevealedCells = { ...get().revealedCells };
                 for (let i = 0; i < cells.length; i++) {
-                    const key = `${cells[i][0]}_${cells[i][1]}`;
+                    const key = `${cells[i].x}_${cells[i].y}`;
                     if (!newRevealedCells[key] || newRevealedCells[key] === 'UNKNOWN') {
                         newRevealedCells[key] = type;
                     }
@@ -118,41 +110,18 @@ export const useGameStore = create<GameStore>(
                 set({ scrollPosition: [x, y] });
             },
 
-            setSingleRevealedCell: (x: number, y: number, type: 'HIT' | 'MISS' | 'UNKNOWN') => {
-                const newRevealedCells = { ...get().revealedCells };
-                newRevealedCells[`${x}_${y}`] = type;
-                set({ revealedCells: newRevealedCells });
-            },
-
-            addUnknownCell: (x: number, y: number) =>
-                set((state) => {
-                    state.setSingleRevealedCell(x, y, 'UNKNOWN');
-
-                    return state.hoveredCell
-                        ? { unknownCells: [...state.unknownCells, { ...state.hoveredCell }] }
-                        : {};
-                }),
-
-            clearUnknownCells: () => set({ unknownCells: [] }),
             toggleFreePlayWindow: () =>
                 set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
+
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
-            togglePrizeWindow: () => set((state) => ({ prizeWindowOpen: !state.prizeWindowOpen })),
         }),
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,
             storage: createJSONStorage(() => localStorage),
-            partialize: ({
+            partialize: ({ hitCells, missedCells, revealedCells, helpWindowOpen }) => ({
                 hitCells,
                 missedCells,
                 revealedCells,
-                unknownCells,
-                helpWindowOpen,
-            }) => ({
-                hitCells,
-                missedCells,
-                revealedCells,
-                unknownCells,
                 helpWindowOpen,
             }),
         }
