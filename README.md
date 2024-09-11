@@ -10,7 +10,7 @@ Create an .env file in the root of the application directory
 touch .env.development
 ```
 
-Add the following env vars...
+Add the following env vars....
 
 ```
 USER_KEY=<KEY>
