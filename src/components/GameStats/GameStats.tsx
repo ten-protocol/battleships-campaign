@@ -6,7 +6,7 @@ import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 
 export default function GameStats() {
     const { isConnected } = useAccount();
-    const games = usePlayTrackerStore((state) => state.games);
+    const { games } = usePlayTrackerStore((state) => ({ games: state.games }));
     const playData = games[import.meta.env.VITE_CONTRACT_ADDRESS];
 
     return (

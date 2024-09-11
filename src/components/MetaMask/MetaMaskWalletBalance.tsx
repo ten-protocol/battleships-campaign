@@ -7,6 +7,7 @@ import Button from '@/components/Button/Button';
 import { FAUCET_URL, MOVE_FEE, PLAY_TOKEN_SYMBOL, TEN_CHAIN_ID } from '@/lib/constants';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
+import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 export default function MetaMaskWalletBalance() {
@@ -14,12 +15,13 @@ export default function MetaMaskWalletBalance() {
         state.setAddress,
         state.setConnector,
     ]);
+    const moves = usePlayTrackerStore((state) => state.moves);
     const chainId = useChainId();
     const { address, isConnected, connector } = useAccount();
-    const { data: ethBalance } = useBalance({
+    const { data: ethBalance, refetch: ethRefetch } = useBalance({
         address,
     });
-    const { data: zenBalance } = useBalance({
+    const { data: zenBalance, refetch: zenRefetch } = useBalance({
         address,
         token: import.meta.env.VITE_ZEN_CONTRACT_ADDRESS as Address,
     });
@@ -31,6 +33,11 @@ export default function MetaMaskWalletBalance() {
             setConnector(connector?.name);
         }
     }, [address]);
+
+    useEffect(() => {
+        zenRefetch();
+        ethRefetch();
+    }, [moves]);
 
     const numberOfPlays = ethBalance?.value
         ? Math.floor(parseFloat(ethBalance.formatted) / parseFloat(MOVE_FEE))
