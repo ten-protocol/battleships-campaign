@@ -46,7 +46,8 @@ export type GuessState =
     | 'TRANSACTION_SUCCESS'
     | 'RECEIVED_RECEIPT'
     | 'HIT'
-    | 'MISS';
+    | 'MISS'
+    | 'ALREADY_HIT';
 
 export const useContractStore = create<ContractStore>(
     persist(
@@ -110,6 +111,7 @@ export const useContractStore = create<ContractStore>(
                         sunk,
                         guessedCoords,
                         zenTransferred,
+                        uniqueStrike,
                     } = hitFeedbackLog.args.toObject();
 
                     addPlayToGameContract(
@@ -122,7 +124,7 @@ export const useContractStore = create<ContractStore>(
                     get().setHits(allHits);
                     get().setMisses(allMisses);
                     get().setGraveyard(graveyard);
-                    set({ guessState: success ? 'HIT' : 'MISS' });
+                    set({ guessState: success ? 'HIT' : uniqueStrike ? 'MISS' : 'ALREADY_HIT' });
                     set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {

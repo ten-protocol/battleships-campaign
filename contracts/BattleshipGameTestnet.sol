@@ -42,7 +42,7 @@ contract BattleshipGameTestnet {
     IERC20 public rewardToken;
 
     event GameOver(address winner, uint256 totalZENAllocated);
-    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred);
+    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred, bool uniqueStrike);
 
     constructor(address tokenAddress) {
         rewardToken = IERC20(tokenAddress);
@@ -91,13 +91,17 @@ contract BattleshipGameTestnet {
         require(!gameOver, 'Game is over, no more hits accepted');
         require(msg.value == 0.00443 ether, 'Incorrect fee amount');
         uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        _processHit(msg.sender, x, y);
+
+        if (hits[positionKey]) {
+            payable(msg.sender).transfer(msg.value);
+            emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0, false);
+        } else {
+            _processHit(msg.sender, x, y);
+        }
     }
 
     function _processHit(address player, uint8 x, uint8 y) private {
         uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
@@ -149,7 +153,7 @@ contract BattleshipGameTestnet {
             totalZENAllocated += zenTransferred;
         }
 
-        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred);
+        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred, true);
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {

@@ -1,6 +1,6 @@
 
 - gameover screen/state
-- explosion effect/notification when ship is sunk
+~~- explosion effect/notification when ship is sunk~~
 - Stress test
 - component help tips
 - Make responsive for mobile?

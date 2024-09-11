@@ -89,6 +89,18 @@ export default function ProcessingNotification() {
         );
     }
 
+    if (guessState === 'ALREADY_HIT') {
+        footerContent = <div>{CloseButton}</div>;
+        bodyContent = (
+            <div className="flex flex-col items-start">
+                <p className="text-lg inline-block px-1">That cell had already been targeted.</p>
+                <p className="text-sm inline-block px-1">
+                    Integrate updated intel and recalibrate for immediate re-engagement.
+                </p>
+            </div>
+        );
+    }
+
     if (guessState === 'HIT') {
         footerContent = <div>{CloseButton}</div>;
         bodyContent = (
