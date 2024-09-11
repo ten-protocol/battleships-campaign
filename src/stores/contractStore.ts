@@ -121,10 +121,24 @@ export const useContractStore = create<ContractStore>(
                         zenTransferred
                     );
 
+                    const guessState = success ? 'HIT' : uniqueStrike ? 'MISS' : 'ALREADY_HIT';
+
+                    if (guessState === 'MISS') {
+                        addNewMessage('Missed. Shot failed to find target.');
+                    }
+                    if (guessState === 'HIT') {
+                        addNewMessage('DIRECT HIT. Shot successfully found target.', 'SUCCESS');
+                    }
+                    if (guessState === 'ALREADY_HIT') {
+                        addNewMessage(
+                            'CELL ALREADY HIT. Target has already been targeted by another player.'
+                        );
+                    }
+
                     get().setHits(allHits);
                     get().setMisses(allMisses);
                     get().setGraveyard(graveyard);
-                    set({ guessState: success ? 'HIT' : uniqueStrike ? 'MISS' : 'ALREADY_HIT' });
+                    set({ guessState });
                     set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
@@ -185,7 +199,6 @@ export const useContractStore = create<ContractStore>(
 
             setMisses: (latestMisses: string[][]) => {
                 const currentMisses = useGameStore.getState().missedCells;
-                const addNewMessage = useMessageStore.getState().addNewMessage;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
                 if (missesHaveUpdated) {
@@ -204,14 +217,12 @@ export const useContractStore = create<ContractStore>(
                     useGameStore.setState({ missedCells });
                     useGameStore.getState().setRevealedCells(latestMisses, 'MISS');
                     useGameStore.getState().clearUnknownCells();
-                    addNewMessage('Missed. Shot failed to find target.');
                 }
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
             setHits: (latestHits: string[][]) => {
                 const currentHits = useGameStore.getState().hitCells;
-                const addNewMessage = useMessageStore.getState().addNewMessage;
                 const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
                 if (hitsHaveUpdated) {
@@ -229,7 +240,6 @@ export const useContractStore = create<ContractStore>(
                     set({ hits: latestHits });
                     useGameStore.setState({ hitCells });
                     useGameStore.getState().setRevealedCells(latestHits, 'HIT');
-                    addNewMessage('DIRECT HIT. Shot successfully found target.', 'SUCCESS');
                 }
             },
 
