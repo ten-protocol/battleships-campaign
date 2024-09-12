@@ -2,12 +2,7 @@ import React from 'react';
 
 import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
-import {
-    braveWallet,
-    metaMaskWallet,
-    phantomWallet,
-    rabbyWallet,
-} from '@rainbow-me/rainbowkit/wallets';
+import { braveWallet, metaMaskWallet, rabbyWallet } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactDOM from 'react-dom/client';
 import { createWalletClient, custom, defineChain } from 'viem';
