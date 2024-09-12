@@ -27,7 +27,9 @@ export default function MetaMaskWalletBalance() {
     });
 
     useEffect(() => {
-        setAddress(address as Address);
+        if (address) {
+            setAddress(address as Address);
+        }
 
         if (connector) {
             setConnector(connector?.name);
