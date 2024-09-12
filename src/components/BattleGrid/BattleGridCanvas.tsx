@@ -9,7 +9,6 @@ import { COLS, HEX_GRID_MARGIN, HEX_HEIGHT, HEX_WIDTH, ROWS } from '@/lib/consta
 
 import BattleGridCursor from './BattleGridCursor';
 import BattleGridExplosion from './BattleGridExplosion';
-import BattleGridUnknowns from './BattleGridUnknowns';
 
 export default function BattleGridCanvas() {
     const [app, setApp] = useState<Application<ICanvas>>();
@@ -27,7 +26,7 @@ export default function BattleGridCanvas() {
         const renderLoop = (currentTime: number) => {
             const deltaTime = currentTime - lastTime;
 
-            if (deltaTime >= targetInterval) {
+            if (app?.ticker && deltaTime >= targetInterval) {
                 app.ticker.update(currentTime);
                 lastTime = currentTime - (deltaTime % targetInterval);
             }
@@ -52,7 +51,6 @@ export default function BattleGridCanvas() {
         >
             <Container>
                 <BattleGridCells />
-                <BattleGridUnknowns />
             </Container>
             <CellHighlight />
             <BattleGridExplosion particleCount={40} duration={1000} />

@@ -1,12 +1,13 @@
 import HudWindow from '@/components/HudWindow/HudWindow';
+import { useAccount } from 'wagmi';
+
 import formatNumber from '@/helpers/formatNumber';
 import { COLS, ROWS } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
-import { useWalletStore } from '@/stores/walletStore';
 
 export default function CellsRemaining() {
     const revealedCells = useGameStore((state) => state.revealedCells);
-    const isConnected = useWalletStore((state) => state.isConnected);
+    const { isConnected } = useAccount();
     const numberOfRevealedCells = Object.keys(revealedCells).length;
     const totalCells = ROWS * COLS;
     const unknownState = numberOfRevealedCells === 0;

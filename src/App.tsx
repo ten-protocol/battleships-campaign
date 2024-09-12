@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import detectEthereumProvider from '@metamask/detect-provider';
-import { Eip1193Provider } from 'ethers/src.ts/providers/provider-browser';
+import { useAccount } from 'wagmi';
 
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
 import CellsRemaining from '@/components/CellsRemaining/CellsRemaining';
-import ClaimPrizeWindow from '@/components/ClaimPrizeWindow/ClaimPrizeWindow';
 import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 import GameStats from '@/components/GameStats/GameStats';
 import Graveyard from '@/components/Graveyard/Graveyard';
@@ -15,7 +13,6 @@ import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
 import SocialShare from '@/components/SocialShare/SocialShare';
-import { TEN_CHAIN_ID } from '@/lib/constants';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
@@ -25,15 +22,11 @@ import { useWalletStore } from '@/stores/walletStore';
 import './App.css';
 
 function App() {
-    const [address, setAddress, setProvider, handleNetworkChange] = useWalletStore((state) => [
-        state.address,
-        state.setAddress,
-        state.setProvider,
-        state.handleNetworkChange,
-    ]);
     const addNewMessage = useMessageStore((state) => state.addNewMessage);
+    const storedAddress = useWalletStore((state) => state.address);
     const addNewGameContract = usePlayTrackerStore((state) => state.addNewGameContract);
     const [initialized, setInitialized] = useState(false);
+    const { address, status, connector } = useAccount();
 
     useEffect(() => {
         addNewGameContract(import.meta.env.VITE_CONTRACT_ADDRESS);
@@ -44,65 +37,25 @@ function App() {
     }, []);
 
     useEffect(() => {
-        connectToMetaMask();
+        if (status === 'connected') {
+            addNewMessage('Connected to wallet ! Account: ' + address);
 
-        window.ethereum?.on('accountsChanged', handleAccountsChanged);
-        window.ethereum?.on('chainChanged', handleChainChanged);
-
-        return () => {
-            window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
-            window.ethereum?.removeListener('chainChanged', handleChainChanged);
-        };
-    }, [address]);
-
-    const connectToMetaMask = async () => {
-        try {
-            const provider: Eip1193Provider | null = await detectEthereumProvider();
-
-            if (provider && window.ethereum?.isMetaMask) {
-                const chainId = await provider.request({ method: 'eth_chainId' });
-                setProvider(provider, chainId);
-
-                if (chainId !== TEN_CHAIN_ID) {
-                    addNewMessage('Not connected to TEN! Connect at https://testnet.ten.xyz');
-                    return;
-                }
-
-                const accounts = await provider.request({
-                    method: 'eth_requestAccounts',
-                });
-
-                setAddress(accounts[0]);
-                addNewMessage('Connected to wallet ! Account: ' + accounts[0]);
-                setInitialized(true);
-
-                trackEvent('connect_wallet', {
-                    connected_wallet_address: accounts[0],
-                    connected_wallet_type: 'Metamask',
-                    wallet_types: getWalletUserWallets(),
-                });
-            } else {
-                addNewMessage('Please install MetaMask!', 'ERROR');
-                setInitialized(true);
-            }
-        } catch (err: any) {
-            console.error('Error:', err?.message);
-            setInitialized(true);
+            trackEvent('connect_wallet', {
+                connected_wallet_address: address,
+                connected_wallet_type: connector?.name || 'unknown',
+                wallet_types: getWalletUserWallets(),
+            });
         }
-    };
 
-    const handleAccountsChanged = (addresses: string[]) => {
-        if (addresses.length === 0) {
-            setAddress(null);
-        } else {
-            setAddress(addresses[0]);
+        if (status === 'disconnected' && storedAddress) {
+            addNewMessage(`Wallet ${storedAddress} disconnected.`);
+
+            trackEvent('disconnect_wallet', {
+                connected_wallet_address: storedAddress,
+                wallet_types: getWalletUserWallets(),
+            });
         }
-    };
-
-    const handleChainChanged = (chainId: string) => {
-        console.log('Network changed to:', chainId);
-        handleNetworkChange(chainId);
-    };
+    }, [status]);
 
     if (!initialized) {
         return null;
@@ -131,7 +84,6 @@ function App() {
             <ProcessingNotification />
             <FreePlayWindow />
             <HelpWindow />
-            <ClaimPrizeWindow />
         </div>
     );
 }

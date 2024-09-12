@@ -14,6 +14,7 @@ export type PlayData = {
 
 export type PlayTrackerState = {
     games: { [key: string]: PlayData };
+    moves: number;
 };
 
 export type PlayTrackerActions = {
@@ -32,6 +33,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
     persist(
         (set, get) => ({
             games: {},
+            moves: 0,
 
             addNewGameContract: (address: string) => {
                 if (!get().games[address]) {
@@ -76,6 +78,8 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                         } else {
                             state.games[address].misses++;
                         }
+
+                        state.moves++
                     })
                 );
             },

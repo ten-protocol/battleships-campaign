@@ -1,11 +1,12 @@
+import { useAccount } from 'wagmi';
+
 import HudWindow from '@/components/HudWindow/HudWindow';
 import { PLAY_TOKEN_SYMBOL } from '@/lib/constants';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
-import { useWalletStore } from '@/stores/walletStore';
 
 export default function GameStats() {
-    const isConnected = useWalletStore((state) => state.isConnected);
-    const games = usePlayTrackerStore((state) => state.games);
+    const { isConnected } = useAccount();
+    const { games } = usePlayTrackerStore((state) => ({ games: state.games }));
     const playData = games[import.meta.env.VITE_CONTRACT_ADDRESS];
 
     return (

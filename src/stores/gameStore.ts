@@ -7,7 +7,7 @@ import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
 
-import { useContractStore } from './contractStore';
+import { FeedbackCoords, useContractStore } from './contractStore';
 
 export type Cell = {
     row: number;
@@ -26,19 +26,16 @@ export type GameState = {
     selectedCell: Cell | null;
     freePlayWindowOpen: boolean;
     helpWindowOpen: boolean;
-    prizeWindowOpen: boolean;
 };
 
 export type GameActions = {
     initGrid: (height: number, width: number) => void;
     setHoveredCell: (x: number, y: number) => void;
     selectCell: () => void;
-    setRevealedCells: (cells: string[][], type: RevealedCellType) => void;
+    setRevealedCells: (cells: FeedbackCoords[], type: RevealedCellType) => void;
     setScrollPosition: (x: number, y: number) => void;
-    setSingleRevealedCell: (x: number, y: number, type: RevealedCellType) => void;
     toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
-    togglePrizeWindow: () => void;
 };
 
 export type GameStore = GameState & GameActions;
@@ -54,7 +51,6 @@ export const useGameStore = create<GameStore>(
             selectedCell: null,
             freePlayWindowOpen: false,
             helpWindowOpen: true,
-            prizeWindowOpen: false,
 
             initGrid: (width: number, height: number) =>
                 set(() => {
@@ -95,17 +91,12 @@ export const useGameStore = create<GameStore>(
                 submitGuess(selectedCell.col, selectedCell.row);
             },
 
-            setRevealedCells: (cells: string[][], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
+            setRevealedCells: (cells: FeedbackCoords[], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
                 set(
                     produce((state) => {
                         for (let i = 0; i < cells.length; i++) {
-                            const key = `${cells[i][0]}_${cells[i][1]}`;
-                            if (
-                                !state.revealedCells[key] ||
-                                state.revealedCells[key] === 'UNKNOWN'
-                            ) {
-                                state.revealedCells[key] = type;
-                            }
+                            const key = `${cells[i].x}_${cells[i].y}`;
+                            state.revealedCells[key] = type;
                         }
                     })
                 );
@@ -115,18 +106,10 @@ export const useGameStore = create<GameStore>(
                 set({ scrollPosition: [x, y] });
             },
 
-            setSingleRevealedCell: (x: number, y: number, type: 'HIT' | 'MISS' | 'UNKNOWN') => {
-                set(
-                    produce((state) => {
-                        state.revealedCells[`${x}_${y}`] = type;
-                    })
-                );
-            },
-
             toggleFreePlayWindow: () =>
                 set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
+
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
-            togglePrizeWindow: () => set((state) => ({ prizeWindowOpen: !state.prizeWindowOpen })),
         }),
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,

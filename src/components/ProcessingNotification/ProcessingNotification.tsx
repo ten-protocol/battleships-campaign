@@ -5,6 +5,7 @@ import HudWindow from '@/components/HudWindow/HudWindow';
 import {
     FAUCET_URL,
     FINAL_SINK_REWARD,
+    GATEWAY_URL,
     HIT_REWARD,
     MOVE_FEE,
     PLAY_TOKEN_SYMBOL,
@@ -13,9 +14,8 @@ import {
 import { useContractStore } from '@/stores/contractStore';
 
 export default function ProcessingNotification() {
-    const [guessState, lastError, resetGuessState, lastReward] = useContractStore((state) => [
+    const [guessState, resetGuessState, lastReward] = useContractStore((state) => [
         state.guessState,
-        state.lastError,
         state.resetGuessState,
         state.lastReward,
     ]);
@@ -46,8 +46,32 @@ export default function ProcessingNotification() {
         bodyContent = (
             <div className="flex flex-col items-start">
                 <p className="text-lg bg-red-600 inline-block px-1">WEAPON ACTIVATION FAILED</p>
-                <p className="text-sm px-1">Error detected</p>
-                <p className="text-sm px-1">{lastError}</p>
+                <p className="text-sm px-1 mb-3">
+                    Error detected. This can happen for a number of reasons.
+                </p>
+                <ul>
+                    <li className="text-sm px-1 mb-2">
+                        1. Insufficient Funds. Get more from the{' '}
+                        <a
+                            href={FAUCET_URL}
+                            target="_blank"
+                            className="text-accent hover:underline"
+                        >
+                            TEN Faucet.
+                        </a>
+                    </li>
+                    <li className="text-sm px-1">
+                        2. Missing or invalid viewing key. Make sure you have registered and
+                        authenticated through the{' '}
+                        <a
+                            href={GATEWAY_URL}
+                            target="_blank"
+                            className="text-accent hover:underline"
+                        >
+                            TEN Gateway.
+                        </a>
+                    </li>
+                </ul>
             </div>
         );
     }
@@ -84,6 +108,18 @@ export default function ProcessingNotification() {
                 <p className="text-lg inline-block px-1">Shot failed to find target</p>
                 <p className="text-sm inline-block px-1">
                     Initiate trajectory analysis and recalibrate targeting systems
+                </p>
+            </div>
+        );
+    }
+
+    if (guessState === 'ALREADY_HIT') {
+        footerContent = <div>{CloseButton}</div>;
+        bodyContent = (
+            <div className="flex flex-col items-start">
+                <p className="text-lg inline-block px-1">That cell had already been targeted.</p>
+                <p className="text-sm inline-block px-1">
+                    Integrate updated intel and recalibrate for immediate re-engagement.
                 </p>
             </div>
         );
