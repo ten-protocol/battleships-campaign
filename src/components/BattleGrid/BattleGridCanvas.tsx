@@ -28,7 +28,7 @@ export default function BattleGridCanvas() {
         const renderLoop = (currentTime: number) => {
             const deltaTime = currentTime - lastTime;
 
-            if (deltaTime >= targetInterval) {
+            if (app?.ticker && deltaTime >= targetInterval) {
                 app.ticker.update(currentTime);
                 lastTime = currentTime - (deltaTime % targetInterval);
             }

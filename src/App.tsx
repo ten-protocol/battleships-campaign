@@ -48,7 +48,7 @@ function App() {
         }
 
         if (status === 'disconnected' && storedAddress) {
-            addNewMessage(`Wallet ${address} disconnected.`);
+            addNewMessage(`Wallet ${storedAddress} disconnected.`);
 
             trackEvent('disconnect_wallet', {
                 connected_wallet_address: storedAddress,
