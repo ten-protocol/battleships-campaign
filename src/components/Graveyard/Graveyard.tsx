@@ -8,10 +8,14 @@ import { useWalletStore } from '@/stores/walletStore';
 
 export default function Graveyard() {
     const graveyard = useContractStore((state) => state.graveyard);
-    const hitCells = useGameStore((state) => state.hitCells);
+    const revealedCells = useGameStore((state) => state.revealedCells);
     const isConnected = useWalletStore((state) => state.isConnected);
     const sunkShipTotal = graveyard.reduce((nxt, cur) => (cur ? nxt : nxt + 1), 0);
-    const fleetHealth = 100 - (hitCells.length / (graveyard.length * SHIP_SIZE)) * 100;
+    const fleetHealth =
+        100 -
+        (Object.values(revealedCells).filter((e) => e === 'HIT').length /
+            (graveyard.length * SHIP_SIZE)) *
+            100;
     const unknownState = graveyard.length === 0;
 
     const Footer = (

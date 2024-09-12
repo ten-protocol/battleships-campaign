@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
 import detectEthereumProvider from '@metamask/detect-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Eip1193Provider } from 'ethers/src.ts/providers/provider-browser';
 
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
@@ -25,8 +24,6 @@ import { useWalletStore } from '@/stores/walletStore';
 
 import './App.css';
 
-const queryClient = new QueryClient();
-
 function App() {
     const [address, setAddress, setProvider, handleNetworkChange] = useWalletStore((state) => [
         state.address,
@@ -49,16 +46,12 @@ function App() {
     useEffect(() => {
         connectToMetaMask();
 
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', handleAccountsChanged);
-            window.ethereum.on('chainChanged', handleChainChanged);
-        }
+        window.ethereum?.on('accountsChanged', handleAccountsChanged);
+        window.ethereum?.on('chainChanged', handleChainChanged);
 
         return () => {
-            if (window.ethereum) {
-                window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-                window.ethereum.removeListener('chainChanged', handleChainChanged);
-            }
+            window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
+            window.ethereum?.removeListener('chainChanged', handleChainChanged);
         };
     }, [address]);
 
@@ -116,32 +109,30 @@ function App() {
     }
 
     return (
-        <QueryClientProvider client={queryClient}>
-            <div className="py-2 px-6">
-                <PageHeader />
-                <SocialShare />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
-                    <div className="order-2 lg:order-1">
-                        <Graveyard />
-                    </div>
-                    <div className="overflow-hidden order-1 md:col-span-2 lg:order-2 lg:col-span-1">
-                        <BattleGrid />
-                    </div>
-                    <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
-                        <MetaMask />
-                        <GameStats />
-                        <CellsRemaining />
-                    </div>
-                    <div className="md:col-span-3 order-4">
-                        <MessageLog />
-                    </div>
+        <div className="py-2 px-6">
+            <PageHeader />
+            <SocialShare />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
+                <div className="order-2 lg:order-1">
+                    <Graveyard />
                 </div>
-                <ProcessingNotification />
-                <FreePlayWindow />
-                <HelpWindow />
-                <ClaimPrizeWindow />
+                <div className="overflow-hidden order-1 md:col-span-2 lg:order-2 lg:col-span-1">
+                    <BattleGrid />
+                </div>
+                <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
+                    <MetaMask />
+                    <GameStats />
+                    <CellsRemaining />
+                </div>
+                <div className="md:col-span-3 order-4">
+                    <MessageLog />
+                </div>
             </div>
-        </QueryClientProvider>
+            <ProcessingNotification />
+            <FreePlayWindow />
+            <HelpWindow />
+            <ClaimPrizeWindow />
+        </div>
     );
 }
 

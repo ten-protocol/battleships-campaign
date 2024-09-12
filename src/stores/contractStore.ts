@@ -3,7 +3,6 @@ import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
-import getCellXY from '@/helpers/getCellXY';
 import { MOVE_FEE } from '@/lib/constants';
 import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
 import getWalletUserWallets from '@/lib/getUserWallets';
@@ -146,7 +145,7 @@ export const useContractStore = create<ContractStore>(
                         });
 
                         if (formattedError.includes('Cell already hit')) {
-                            useGameStore.getState().addUnknownCell(x, y);
+                            useGameStore.getState().setSingleRevealedCell(x, y, 'UNKNOWN');
                         }
 
                         set({ lastError: formattedError });
@@ -182,50 +181,25 @@ export const useContractStore = create<ContractStore>(
             },
 
             setMisses: (latestMisses: string[][]) => {
-                const currentMisses = useGameStore.getState().missedCells;
                 const addNewMessage = useMessageStore.getState().addNewMessage;
+                const currentMisses = get().misses;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
                 if (missesHaveUpdated) {
-                    const missedCells = latestMisses.map((entry) => {
-                        const [x, y] = getCellXY(parseInt(entry[0]), parseInt(entry[1]));
-                        return {
-                            col: parseInt(entry[0]),
-                            row: parseInt(entry[1]),
-                            x,
-                            y,
-                            state: 'MISSED',
-                        };
-                    });
-
                     set({ misses: latestMisses });
-                    useGameStore.setState({ missedCells });
                     useGameStore.getState().setRevealedCells(latestMisses, 'MISS');
-                    useGameStore.getState().clearUnknownCells();
                     addNewMessage('Missed. Shot failed to find target.');
                 }
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
             setHits: (latestHits: string[][]) => {
-                const currentHits = useGameStore.getState().hitCells;
                 const addNewMessage = useMessageStore.getState().addNewMessage;
+                const currentHits = get().hits;
                 const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
                 if (hitsHaveUpdated) {
-                    const hitCells = latestHits.map((entry) => {
-                        const [x, y] = getCellXY(parseInt(entry[0]), parseInt(entry[1]));
-                        return {
-                            col: parseInt(entry[0]),
-                            row: parseInt(entry[1]),
-                            x,
-                            y,
-                            state: 'MISSED',
-                        };
-                    });
-
                     set({ hits: latestHits });
-                    useGameStore.setState({ hitCells });
                     useGameStore.getState().setRevealedCells(latestHits, 'HIT');
                     addNewMessage('DIRECT HIT. Shot successfully found target.', 'SUCCESS');
                 }

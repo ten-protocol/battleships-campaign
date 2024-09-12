@@ -1,44 +1,31 @@
 import { useMemo } from 'react';
 
-import { Container, Graphics, Text } from '@pixi/react';
+import { Container, Text } from '@pixi/react';
 import { TextStyle } from 'pixi.js';
 
-import drawGridCells from '@/helpers/drawGridCells';
+import getCellXY from '@/helpers/getCellXY';
 import { useGameStore } from '@/stores/gameStore';
 
 const style = new TextStyle({ fontSize: 12, fill: 0xffffff });
 
 export default function BattleGridUnknowns() {
-    const unknownCells = useGameStore((state) => state.unknownCells);
+    const revealedCells = useGameStore((state) => state.revealedCells);
 
-    const gridCells = useMemo(
-        () => <Graphics draw={(g) => drawGridCells(g, unknownCells, 'UNKNOWN')} />,
-        [unknownCells, unknownCells]
-    );
+    const questionMarks = useMemo(() => {
+        const unknownCells = Object.entries(revealedCells).filter(
+            ([_, value]) => value === 'UNKNOWN'
+        );
 
-    const questionMarks = useMemo(
-        () =>
-            unknownCells.map(({ x, y }) => (
-                <Text
-                    key={`${x}_${y}`}
-                    text="?"
-                    style={style}
-                    x={x}
-                    y={y}
-                    anchor={0.5} // Anchor the text to the center
-                />
-            )),
-        [unknownCells]
-    );
+        return unknownCells.map(([key]) => {
+            const [col, row] = key.split('_');
+            const [x, y] = getCellXY(parseInt(col), parseInt(row));
+            return <Text key={key} text="?" style={style} x={x} y={y} anchor={0.5} />;
+        });
+    }, [revealedCells]);
 
-    if (unknownCells.length === 0) {
+    if (questionMarks.length === 0) {
         return null;
     }
 
-    return (
-        <Container>
-            {gridCells}
-            {questionMarks}
-        </Container>
-    );
+    return <Container>{questionMarks}</Container>;
 }

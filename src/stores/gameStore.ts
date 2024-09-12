@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -19,9 +20,6 @@ export type RevealedCellType = 'HIT' | 'MISS' | 'UNKNOWN';
 
 export type GameState = {
     grid: Cell[];
-    missedCells: Cell[];
-    hitCells: Cell[];
-    unknownCells: Cell[];
     revealedCells: { [key: string]: RevealedCellType };
     hoveredCell: Cell | null;
     scrollPosition: [number, number];
@@ -38,8 +36,6 @@ export type GameActions = {
     setRevealedCells: (cells: string[][], type: RevealedCellType) => void;
     setScrollPosition: (x: number, y: number) => void;
     setSingleRevealedCell: (x: number, y: number, type: RevealedCellType) => void;
-    addUnknownCell: (x: number, y: number) => void;
-    clearUnknownCells: () => void;
     toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
     togglePrizeWindow: () => void;
@@ -51,9 +47,6 @@ export const useGameStore = create<GameStore>(
     persist(
         (set, get) => ({
             grid: [],
-            missedCells: [],
-            hitCells: [],
-            unknownCells: [],
             revealedCells: {},
             hoveredCell: null,
             scrollPosition: [0, 0],
@@ -103,15 +96,19 @@ export const useGameStore = create<GameStore>(
             },
 
             setRevealedCells: (cells: string[][], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
-                const newRevealedCells = { ...get().revealedCells };
-                for (let i = 0; i < cells.length; i++) {
-                    const key = `${cells[i][0]}_${cells[i][1]}`;
-                    if (!newRevealedCells[key] || newRevealedCells[key] === 'UNKNOWN') {
-                        newRevealedCells[key] = type;
-                    }
-                }
-
-                set({ revealedCells: newRevealedCells });
+                set(
+                    produce((state) => {
+                        for (let i = 0; i < cells.length; i++) {
+                            const key = `${cells[i][0]}_${cells[i][1]}`;
+                            if (
+                                !state.revealedCells[key] ||
+                                state.revealedCells[key] === 'UNKNOWN'
+                            ) {
+                                state.revealedCells[key] = type;
+                            }
+                        }
+                    })
+                );
             },
 
             setScrollPosition: (x: number, y: number) => {
@@ -119,21 +116,13 @@ export const useGameStore = create<GameStore>(
             },
 
             setSingleRevealedCell: (x: number, y: number, type: 'HIT' | 'MISS' | 'UNKNOWN') => {
-                const newRevealedCells = { ...get().revealedCells };
-                newRevealedCells[`${x}_${y}`] = type;
-                set({ revealedCells: newRevealedCells });
+                set(
+                    produce((state) => {
+                        state.revealedCells[`${x}_${y}`] = type;
+                    })
+                );
             },
 
-            addUnknownCell: (x: number, y: number) =>
-                set((state) => {
-                    state.setSingleRevealedCell(x, y, 'UNKNOWN');
-
-                    return state.hoveredCell
-                        ? { unknownCells: [...state.unknownCells, { ...state.hoveredCell }] }
-                        : {};
-                }),
-
-            clearUnknownCells: () => set({ unknownCells: [] }),
             toggleFreePlayWindow: () =>
                 set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
@@ -142,17 +131,8 @@ export const useGameStore = create<GameStore>(
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,
             storage: createJSONStorage(() => localStorage),
-            partialize: ({
-                hitCells,
-                missedCells,
+            partialize: ({ revealedCells, helpWindowOpen }) => ({
                 revealedCells,
-                unknownCells,
-                helpWindowOpen,
-            }) => ({
-                hitCells,
-                missedCells,
-                revealedCells,
-                unknownCells,
                 helpWindowOpen,
             }),
         }

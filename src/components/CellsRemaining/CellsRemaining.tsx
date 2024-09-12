@@ -1,5 +1,3 @@
-import { useShallow } from 'zustand/react/shallow';
-
 import HudWindow from '@/components/HudWindow/HudWindow';
 import formatNumber from '@/helpers/formatNumber';
 import { COLS, ROWS } from '@/lib/constants';
@@ -7,11 +5,11 @@ import { useGameStore } from '@/stores/gameStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 export default function CellsRemaining() {
-    const [misses, hits] = useGameStore(useShallow((state) => [state.missedCells, state.hitCells]));
+    const revealedCells = useGameStore((state) => state.revealedCells);
     const isConnected = useWalletStore((state) => state.isConnected);
-    const numberOfRevealedCells = misses.length + hits.length;
+    const numberOfRevealedCells = Object.keys(revealedCells).length;
     const totalCells = ROWS * COLS;
-    const unknownState = misses.length + hits.length === 0;
+    const unknownState = numberOfRevealedCells === 0;
     const Disconnected = <p className="text-center">Initialization Required</p>;
 
     return (

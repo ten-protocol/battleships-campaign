@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { produce } from 'immer';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -34,20 +35,18 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
 
             addNewGameContract: (address: string) => {
                 if (!get().games[address]) {
-                    const newState = get().games;
-
-                    newState[address] = {
-                        lastPlay: null,
-                        hits: 0,
-                        misses: 0,
-                        shipsSunk: 0,
-                        redeemed: false,
-                        rewardedTokens: 0,
-                    };
-
-                    set({
-                        games: newState,
-                    });
+                    set(
+                        produce((state) => {
+                            state.games[address] = {
+                                lastPlay: null,
+                                hits: 0,
+                                misses: 0,
+                                shipsSunk: 0,
+                                redeemed: false,
+                                rewardedTokens: 0,
+                            };
+                        })
+                    );
                 }
             },
 
@@ -60,23 +59,25 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                 if (!get().games[address]) {
                     throw new Error('Cannot find current game in play-tracker store.');
                 }
-                const newState = get().games;
-                newState[address].lastPlay = new Date().toISOString();
 
-                if (shipSunk) {
-                    newState[address].shipsSunk++;
-                }
+                set(
+                    produce((state) => {
+                        state.games[address].lastPlay = new Date().toISOString();
 
-                if (success) {
-                    newState[address].hits++;
-                    newState[address].rewardedTokens += parseFloat(
-                        ethers.formatEther(rewardedTokens)
-                    );
-                } else {
-                    newState[address].misses++;
-                }
+                        if (shipSunk) {
+                            state.games[address].shipsSunk++;
+                        }
 
-                set({ games: newState });
+                        if (success) {
+                            state.games[address].hits++;
+                            state.games[address].rewardedTokens += parseFloat(
+                                ethers.formatEther(rewardedTokens)
+                            );
+                        } else {
+                            state.games[address].misses++;
+                        }
+                    })
+                );
             },
         }),
         {

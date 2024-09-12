@@ -3,14 +3,12 @@ import { useEffect, useState } from 'react';
 import { Container, Stage } from '@pixi/react';
 import { Application, ICanvas } from 'pixi.js';
 
-import BattleGridBackgroundCells from '@/components/BattleGrid/BattleGridBackgoundCells';
+import BattleGridCells from '@/components/BattleGrid/BattleGridCells';
 import CellHighlight from '@/components/CellHighlight/CellHighlight';
 import { COLS, HEX_GRID_MARGIN, HEX_HEIGHT, HEX_WIDTH, ROWS } from '@/lib/constants';
 
 import BattleGridCursor from './BattleGridCursor';
 import BattleGridExplosion from './BattleGridExplosion';
-import BattleGridHits from './BattleGridHits';
-import BattleGridMisses from './BattleGridMisses';
 import BattleGridUnknowns from './BattleGridUnknowns';
 
 export default function BattleGridCanvas() {
@@ -53,10 +51,8 @@ export default function BattleGridCanvas() {
             }}
         >
             <Container>
-                <BattleGridBackgroundCells />
+                <BattleGridCells />
                 <BattleGridUnknowns />
-                <BattleGridMisses />
-                <BattleGridHits />
             </Container>
             <CellHighlight />
             <BattleGridExplosion particleCount={40} duration={1000} />
