@@ -1,7 +1,13 @@
 import React from 'react';
 
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
+import {
+    braveWallet,
+    metaMaskWallet,
+    phantomWallet,
+    rabbyWallet,
+} from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactDOM from 'react-dom/client';
 import { createWalletClient, custom, defineChain } from 'viem';
@@ -33,11 +39,25 @@ export const ten = defineChain({
     },
 });
 
+const connectors = connectorsForWallets(
+    [
+        {
+            groupName: 'Recommended',
+            wallets: [metaMaskWallet, braveWallet, rabbyWallet],
+        },
+    ],
+    {
+        appName: 'TEN: Battleships',
+        projectId: '443',
+    }
+);
+
 export const wagmiConfig = createConfig({
     chains: [ten],
     client({ chain }) {
         return createWalletClient({ chain, transport: custom(window.ethereum!) });
     },
+    connectors,
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
