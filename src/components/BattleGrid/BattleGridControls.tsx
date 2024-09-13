@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Container } from '@pixi/react-animated';
 import * as PIXI from 'pixi.js';
@@ -21,10 +21,14 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
     ]);
     const guessState = useContractStore((state) => state.guessState);
     const containerRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
-    const draggingRef = useRef(false);
-    const dragStartRef = useRef({ x: 0, y: 0 });
-    const initialPositionRef = useRef({ x: 0, y: 0 });
     const mousePositionRef = useRef({ x: 0, y: 0 });
+    const [draggingState, setDraggingState] = useState<'END' | 'START' | 'MOVE'>('END');
+    const [dragStartPos, setDraggingPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [containerStartPosition, setContainerStartPosition] = useState<{ x: number; y: number }>({
+        x: 0,
+        y: 0,
+    });
+
     const gridWidth = HEX_WIDTH * COLS + HEX_GRID_MARGIN * 1.5;
     const gridHeight = HEX_HEIGHT * ROWS * 0.75 + HEX_GRID_MARGIN;
     const isIdle = guessState === 'IDLE';
@@ -42,7 +46,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         let animationFrameId = 0;
 
         const smoothScroll = () => {
-            if (draggingRef.current || !isIdle) {
+            if (draggingState === 'MOVE') {
                 animationFrameId = requestAnimationFrame(smoothScroll);
                 return;
             }
@@ -65,23 +69,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
                     edgeDistanceY > 0.3
                         ? -1 * movementFactor * edgeDistanceY * Math.sign(distanceY)
                         : 0;
-                let newX = x.get() + speedX;
-                let newY = y.get() + speedY;
-
-                if (newX > 0) {
-                    newX = 0;
-                }
-                if (newX < -1 * (gridWidth - width)) {
-                    newX = -1 * (gridWidth - width);
-                }
-
-                if (newY > 0) {
-                    newY = 0;
-                }
-
-                if (newY < -1 * (gridHeight - height)) {
-                    newY = -1 * (gridHeight - height);
-                }
+                const [newX, newY] = clampToContainer(x.get() + speedX, y.get() + speedY);
 
                 api.start({ x: newX, y: newY });
             }
@@ -98,32 +86,67 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
 
     const onDragStart = (event: PIXI.FederatedPointerEvent) => {
         const { x, y } = event.global;
-        dragStartRef.current = { x, y };
+        setDraggingState('START');
+        setDraggingPos({ x, y });
 
-        if (containerRef.current) {
-            initialPositionRef.current = {
-                x: containerRef.current.x,
-                y: containerRef.current.y,
-            };
-        }
+        setContainerStartPosition({
+            x: containerRef.current?.x || 0,
+            y: containerRef.current?.y || 0,
+        });
     };
 
     const onDragEnd = () => {
         setTimeout(() => {
-            draggingRef.current = false;
+            setDraggingState('END');
         }, 200);
     };
 
     const onDragMove = (event: PIXI.FederatedPointerEvent) => {
-        if (!containerRef.current || !width || !height) return;
-        draggingRef.current = true;
+        if (!containerRef.current || !width || !height || draggingState === 'END') return;
+        setDraggingState('MOVE');
 
         const { x, y } = event.global;
-        const deltaX = x - dragStartRef.current.x;
-        const deltaY = y - dragStartRef.current.y;
+        const deltaX = x - dragStartPos.x;
+        const deltaY = y - dragStartPos.y;
+        setContainerStartPosition({
+            x: containerRef.current.x,
+            y: containerRef.current.y,
+        });
+        const [newX, newY] = clampToContainer(
+            containerStartPosition.x + deltaX,
+            containerStartPosition.y + deltaY
+        );
 
-        let newX = initialPositionRef.current.x + deltaX;
-        let newY = initialPositionRef.current.y + deltaY;
+        api.start({
+            x: newX,
+            y: newY,
+        });
+    };
+
+    const onMouseMove = (event: PIXI.FederatedPointerEvent) => {
+        if (draggingState === 'MOVE') return;
+        const { x: gx, y: gy } = event.global;
+        mousePositionRef.current.x = gx;
+        mousePositionRef.current.y = gy;
+
+        setHoveredCell(gx + -1 * x.get(), gy + -1 * y.get());
+    };
+
+    const onClick = () => {
+        api.stop();
+        selectCell();
+    };
+
+    const onTap = async (event: PIXI.FederatedPointerEvent) => {
+        if (draggingState === 'MOVE') return;
+        api.stop();
+        setHoveredCell(event.global.x + -1 * x.get(), event.global.y + -1 * y.get());
+        selectCell();
+    };
+
+    const clampToContainer = (x: number, y: number) => {
+        let newX = x;
+        let newY = y;
 
         if (newX > 0) {
             newX = 0;
@@ -140,31 +163,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
             newY = -1 * (gridHeight - height);
         }
 
-        api.start({
-            x: newX,
-            y: newY,
-        });
-    };
-
-    const onMouseMove = (event: PIXI.FederatedPointerEvent) => {
-        if (draggingRef.current) return;
-        const { x: gx, y: gy } = event.global;
-        mousePositionRef.current.x = gx;
-        mousePositionRef.current.y = gy;
-
-        setHoveredCell(gx + -1 * x.get(), gy + -1 * y.get());
-    };
-
-    const onClick = () => {
-        api.stop();
-        selectCell();
-    };
-
-    const onTap = async (event: PIXI.FederatedPointerEvent) => {
-        if (draggingRef.current) return;
-        api.stop();
-        setHoveredCell(event.global.x + -1 * x.get(), event.global.y + -1 * y.get());
-        selectCell();
+        return [newX, newY];
     };
 
     return (
@@ -176,7 +175,6 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
             tap={onTap}
             touchstart={onDragStart}
             touchend={onDragEnd}
-            pointerupoutside={onDragEnd}
             touchmove={onDragMove}
             onmousemove={onMouseMove}
             onclick={onClick}
