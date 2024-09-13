@@ -1,6 +1,7 @@
-import { UIEvent, useEffect, useRef } from 'react';
+import { UIEvent, useEffect } from 'react';
 
-import BattleGridNavigation from '@/components/BattleGrid/BattleGridNavigation';
+import { useMeasure } from '@react-hookz/web';
+
 import { COLS, CONTAINER_HEIGHT, ROWS } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
 
@@ -10,14 +11,14 @@ const styles = {
     container: {
         width: '100%',
         height: CONTAINER_HEIGHT + 'px',
-        overflow: 'auto',
+        overflow: 'hidden',
     },
 };
 
 export default function BattleGridContainer() {
     const initGrid = useGameStore((state) => state.initGrid);
     const [setScrollPosition] = useGameStore((state) => [state.setScrollPosition]);
-    const elementRef = useRef<HTMLDivElement>(null);
+    const [measures, elementRef] = useMeasure<HTMLDivElement>();
 
     useEffect(() => {
         initGrid(COLS, ROWS);
@@ -29,13 +30,8 @@ export default function BattleGridContainer() {
     };
 
     return (
-        <div
-            ref={elementRef}
-            style={{ ...styles.container, touchAction: 'none' }}
-            onScroll={handleScroll}
-        >
-            {elementRef?.current && <BattleGridNavigation containerRef={elementRef.current} />}
-            <BattleGridCanvas />
+        <div ref={elementRef} style={{ ...styles.container }} onScroll={handleScroll}>
+            <BattleGridCanvas width={measures?.width} height={measures?.height} />
         </div>
     );
 }

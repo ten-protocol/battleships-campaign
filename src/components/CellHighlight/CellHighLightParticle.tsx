@@ -5,7 +5,7 @@ import PIXI from 'pixi.js';
 
 import { Particle } from './cellHighlights.models';
 
-export default function CellhighLightParticle(p: Particle) {
+export default function CellHighLightParticle(p: Particle) {
     const graphicRef = useRef<PIXI.Graphics>(null);
     const [currentAngle, setCurrentAngle] = useState(p.angle);
     const [age, setAge] = useState(0);
@@ -13,7 +13,6 @@ export default function CellhighLightParticle(p: Particle) {
 
     useTick((delta) => {
         if (graphicRef.current) {
-            // Update the angle
             if (p.age && p.ageReset && !ageReset) {
                 setAge(p.age);
                 setAgeReset(true);

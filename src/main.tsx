@@ -43,14 +43,14 @@ const connectors = connectorsForWallets(
     ],
     {
         appName: 'TEN: Battleships',
-        projectId: '443',
+        projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID,
     }
 );
 
 export const wagmiConfig = createConfig({
     chains: [ten],
     client({ chain }) {
-        return createWalletClient({ chain, transport: custom(window.ethereum!) });
+        return createWalletClient({ chain, transport: custom(window?.ethereum!) });
     },
     connectors,
 });
