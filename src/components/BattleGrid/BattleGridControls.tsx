@@ -22,6 +22,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
     const guessState = useContractStore((state) => state.guessState);
     const containerRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
     const mousePositionRef = useRef({ x: 0, y: 0 });
+    const canvasSizeRef = useRef({ width, height });
     const [draggingState, setDraggingState] = useState<'END' | 'START' | 'MOVE'>('END');
     const [dragStartPos, setDraggingPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const [containerStartPosition, setContainerStartPosition] = useState<{ x: number; y: number }>({
@@ -37,6 +38,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         y: 0,
         config: { mass: 1, tension: 170, friction: 26 },
     }));
+    canvasSizeRef.current = { width, height };
 
     if (!isIdle) {
         mousePositionRef.current = { x: -1, y: -1 };
@@ -51,8 +53,8 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
                 return;
             }
 
-            const centerX = width / 2;
-            const centerY = height / 2;
+            const centerX = canvasSizeRef.current.width / 2;
+            const centerY = canvasSizeRef.current.height / 2;
             const distanceX = mousePositionRef.current.x - centerX;
             const distanceY = mousePositionRef.current.y - centerY;
             const edgeDistanceX = Math.abs(distanceX) / centerX;
@@ -69,7 +71,13 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
                     edgeDistanceY > 0.3
                         ? -1 * movementFactor * edgeDistanceY * Math.sign(distanceY)
                         : 0;
-                const [newX, newY] = clampToContainer(x.get() + speedX, y.get() + speedY);
+
+                const [newX, newY] = clampToContainer(
+                    x.get() + speedX,
+                    y.get() + speedY,
+                    canvasSizeRef.current.width,
+                    canvasSizeRef.current.height
+                );
 
                 api.start({ x: newX, y: newY });
             }
@@ -114,7 +122,9 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         });
         const [newX, newY] = clampToContainer(
             containerStartPosition.x + deltaX,
-            containerStartPosition.y + deltaY
+            containerStartPosition.y + deltaY,
+            width,
+            height
         );
 
         api.start({
@@ -144,7 +154,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         selectCell();
     };
 
-    const clampToContainer = (x: number, y: number) => {
+    const clampToContainer = (x: number, y: number, width: number, height: number) => {
         let newX = x;
         let newY = y;
 

@@ -2,7 +2,7 @@ import { UIEvent, useEffect } from 'react';
 
 import { useMeasure } from '@react-hookz/web';
 
-import { COLS, CONTAINER_HEIGHT, ROWS } from '@/lib/constants';
+import { COLS, GRID_CONTAINER_HEIGHT, ROWS } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
 
 import BattleGridCanvas from './BattleGridCanvas';
@@ -10,7 +10,7 @@ import BattleGridCanvas from './BattleGridCanvas';
 const styles = {
     container: {
         width: '100%',
-        height: CONTAINER_HEIGHT + 'px',
+        height: GRID_CONTAINER_HEIGHT + 'px',
         overflow: 'hidden',
     },
 };
