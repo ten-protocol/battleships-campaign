@@ -30,7 +30,7 @@ export const ten = defineChain({
         },
     },
     blockExplorers: {
-        default: { name: 'Explorer', url: 'https://explorer.zora.energy' },
+        default: { name: 'Tenscan', url: 'https://testnet.tenscan.io' },
     },
 });
 
