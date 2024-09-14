@@ -30,7 +30,7 @@ export const ten = defineChain({
         },
     },
     blockExplorers: {
-        default: { name: 'Explorer', url: 'https://explorer.zora.energy' },
+        default: { name: 'Tenscan', url: 'https://testnet.tenscan.io' },
     },
 });
 
@@ -43,14 +43,14 @@ const connectors = connectorsForWallets(
     ],
     {
         appName: 'TEN: Battleships',
-        projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID,
+        projectId: '443',
     }
 );
 
 export const wagmiConfig = createConfig({
     chains: [ten],
     client({ chain }) {
-        return createWalletClient({ chain, transport: custom(window?.ethereum!) });
+        return createWalletClient({ chain, transport: custom(window.ethereum!) });
     },
     connectors,
 });
