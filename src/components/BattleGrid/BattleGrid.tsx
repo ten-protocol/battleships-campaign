@@ -1,28 +1,23 @@
 import { useEffect, useState } from 'react';
 
 import { motion } from 'framer-motion';
-import { useShallow } from 'zustand/react/shallow';
+import { useAccount } from 'wagmi';
 
-import AnimatedText from '@/components/AnimatedText/AnimatedText';
 import BattleGridEdgeArrows from '@/components/BattleGrid/BattleGridEdgeArrows';
-import Button from '@/components/Button/Button';
+import DisconnectedScreen from '@/components/DisconnectedScreen/DisconnectedScreen';
 import HudWindow from '@/components/HudWindow/HudWindow';
 import { TEN_CHAIN_ID } from '@/lib/constants';
-import { useMessageStore } from '@/stores/messageStore';
-import { useWalletStore } from '@/stores/walletStore';
 
 import BattleGridContainer from './BattleGridContainer';
 import BattleGridCurrentCoordinates from './BattleGridCurrentCoordinates';
 
 export default function BattleGrid() {
-    const [isConnected, setAddress, chainId, address] = useWalletStore(
-        useShallow((state) => [state.isConnected, state.setAddress, state.chainId, state.address])
-    );
-    const addNewMessage = useMessageStore((state) => state.addNewMessage);
+    const { isConnected, chainId } = useAccount();
     const [displayGrid, setDisplayGrid] = useState(false);
+    const connectedToTen = chainId === TEN_CHAIN_ID && isConnected;
 
     useEffect(() => {
-        if (isConnected) {
+        if (connectedToTen) {
             setTimeout(() => {
                 setDisplayGrid(true);
             }, 3000);
@@ -36,84 +31,12 @@ export default function BattleGrid() {
         transition: { delay: 0, duration: 1 },
     };
 
-    const connectAccount = async () => {
-        if (window.ethereum?.request) {
-            try {
-                const accounts = await window.ethereum.request({
-                    method: 'eth_requestAccounts',
-                });
-                setAddress(accounts[0]);
-            } catch (error) {
-                addNewMessage('User rejected the request.', 'ERROR');
-            }
-        }
-    };
-
-    const Disconnected = (
-        <div className="text-center w-screen max-w-full">
-            <div className="p-8">
-                <p className="text-2xl mb-8">System Initialization Required</p>
-
-                {address && chainId !== TEN_CHAIN_ID && (
-                    <p className="text-center text-xl -mt-4 mb-4">
-                        You're connected to the incorrect chain
-                    </p>
-                )}
-                {!window.ethereum?.isMetaMask && (
-                    <>
-                        <p className="text-center text-xl -mt-4">MetaMask required.</p>
-                        <p className="text-zinc-200 text-center text-sm mb-4">
-                            If you already have MetaMask installed but are reading this message,
-                            make sure you disable any other wallet providers.{' '}
-                        </p>
-                    </>
-                )}
-
-                <div className="flex flex-col justify-center border-l-stone-50 border p-4">
-                    {!chainId && (
-                        <Button
-                            className="mb-4 self-center"
-                            variant="hoverBorderRed"
-                            onClick={connectAccount}
-                        >
-                            Connect Wallet
-                        </Button>
-                    )}
-
-                    <p>Connect your wallet to the TEN chain.</p>
-                    <p>
-                        Connect at{' '}
-                        <a
-                            className="hover:underline"
-                            href="HTTPS://TESTNET.TEN.XYZ"
-                            rel="noopener"
-                            target="_blank"
-                        >
-                            HTTPS://TESTNET.TEN.XYZ
-                        </a>
-                    </p>
-                </div>
-
-                <p className="text-sm my-6">
-                    <AnimatedText
-                        text="Awaiting establishment of connection to primary nexus. Standby mode activated."
-                        delay={3}
-                        speed={0.05}
-                    />
-                </p>
-                <p className="text-sm mt-6">
-                    <AnimatedText
-                        text="Initiate diagnostic protocol 001. All units remain on high alert and prepare for potential engagement upon connection."
-                        delay={7}
-                        speed={0.05}
-                    />
-                </p>
-            </div>
-        </div>
-    );
-
     return (
-        <HudWindow headerTitle="Battle Grid" isOpen={isConnected} closedContent={Disconnected}>
+        <HudWindow
+            headerTitle="Battle Grid"
+            isOpen={connectedToTen}
+            closedContent={<DisconnectedScreen />}
+        >
             <div className="w-screen max-w-full" style={{ height: 524 }}>
                 {displayGrid ? (
                     <motion.div {...animation}>

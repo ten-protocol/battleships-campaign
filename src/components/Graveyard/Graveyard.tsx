@@ -1,15 +1,16 @@
+import { useAccount } from 'wagmi';
+
 import ShipFresh from '@/assets/shipFresh.svg';
 import ShipSunk from '@/assets/shipSunk.svg';
 import HudWindow from '@/components/HudWindow/HudWindow';
 import { SHIP_SIZE } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
 import { useGameStore } from '@/stores/gameStore';
-import { useWalletStore } from '@/stores/walletStore';
 
 export default function Graveyard() {
     const graveyard = useContractStore((state) => state.graveyard);
     const hitCells = useGameStore((state) => state.hitCells);
-    const isConnected = useWalletStore((state) => state.isConnected);
+    const { isConnected } = useAccount();
     const sunkShipTotal = graveyard.reduce((nxt, cur) => (cur ? nxt : nxt + 1), 0);
     const fleetHealth = 100 - (hitCells.length / (graveyard.length * SHIP_SIZE)) * 100;
     const unknownState = graveyard.length === 0;

@@ -1,12 +1,11 @@
 import { ethers, formatUnits } from 'ethers';
+import { WriteContractErrorType } from 'viem';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
 import getCellXY from '@/helpers/getCellXY';
-import { MOVE_FEE } from '@/lib/constants';
-import { formatMetaMaskError } from '@/lib/formatMetaMaskError';
 import getWalletUserWallets from '@/lib/getUserWallets';
+import placeHit from '@/lib/placeHit';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
@@ -15,8 +14,8 @@ import { useWalletStore } from '@/stores/walletStore';
 import { useGameStore } from './gameStore';
 
 export type ContractState = {
-    hits: string[][];
-    misses: string[][];
+    hits: FeedbackCoords[];
+    misses: FeedbackCoords[];
     graveyard: boolean[];
     gameOver: boolean;
     prizePool: string;
@@ -30,11 +29,13 @@ export type ContractActions = {
     submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
     setPrizePool: (prizePool: string) => void;
-    setHits: (hits: string[][]) => void;
-    setMisses: (misses: string[][]) => void;
+    setHits: (hits: FeedbackCoords[]) => void;
+    setMisses: (misses: FeedbackCoords[]) => void;
     setGraveyard: (graveyard: boolean[]) => void;
-    setLastGuessCoords: (guessedCoords: string[]) => void;
+    setLastGuessCoords: (guessedCoords: number[]) => void;
 };
+
+export type FeedbackCoords = { x: number; y: number };
 
 export type ContractStore = ContractState & ContractActions;
 
@@ -64,44 +65,30 @@ export const useContractStore = create<ContractStore>(
             lastReward: 0,
 
             submitGuess: async (x: number, y: number) => {
-                const signer = useWalletStore.getState().signer;
                 const addNewMessage = useMessageStore.getState().addNewMessage;
+                const { address, connector } = useWalletStore.getState();
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
 
                 trackEvent('guess_placed', {
-                    wallet_address: useWalletStore.getState().address,
+                    wallet_address: address,
                     wallet_types: getWalletUserWallets(),
+                    wallet_used: connector,
                 });
-
-                if (!signer) {
-                    throw new Error('No signer available.');
-                    return;
-                }
 
                 set({ guessState: 'STARTED' });
 
-                addNewMessage('Issuing Guess...');
-                const contract = new ethers.Contract(
-                    import.meta.env.VITE_CONTRACT_ADDRESS,
-                    BattleshipGameJson.abi,
-                    signer
-                );
-                const moveFee = ethers.parseEther(MOVE_FEE);
+                addNewMessage('Striking target...');
+
                 try {
-                    const submitTx = await contract.hit(x, y, {
-                        value: moveFee,
-                    });
-                    set({ guessState: 'TRANSACTION_SUCCESS' });
-                    const receipt = await submitTx.wait();
+                    const { logs, txHash } = await placeHit(x, y);
 
                     trackEvent('guess_transaction_success', {
-                        wallet_address: useWalletStore.getState().address,
+                        wallet_address: address,
                         wallet_types: getWalletUserWallets(),
+                        wallet_used: connector,
                     });
-
-                    addNewMessage('Issued Guess tx: ' + receipt.hash);
-                    const hitFeedbackLog =
-                        receipt.logs.length === 1 ? receipt.logs[0] : receipt.logs[1];
+                    addNewMessage('Target strike tx: ' + txHash);
+                    const hitFeedbackLog = logs[0];
 
                     const {
                         allHits,
@@ -112,7 +99,9 @@ export const useContractStore = create<ContractStore>(
                         guessedCoords,
                         zenTransferred,
                         uniqueStrike,
-                    } = hitFeedbackLog.args.toObject();
+                        //TODO: Revisit this type
+                        //@ts-ignore
+                    } = hitFeedbackLog.args;
 
                     addPlayToGameContract(
                         import.meta.env.VITE_CONTRACT_ADDRESS,
@@ -120,7 +109,6 @@ export const useContractStore = create<ContractStore>(
                         sunk,
                         zenTransferred
                     );
-
                     const guessState = success ? 'HIT' : uniqueStrike ? 'MISS' : 'ALREADY_HIT';
 
                     if (guessState === 'MISS') {
@@ -143,39 +131,19 @@ export const useContractStore = create<ContractStore>(
                     get().setLastGuessCoords(guessedCoords);
                 } catch (error) {
                     console.error(error);
-                    const e = error as { reason?: string };
-                    const formattedError = formatMetaMaskError(error);
+                    const e = error as WriteContractErrorType;
 
                     set({ guessState: 'ERROR' });
 
-                    if (formattedError !== 'Unknown error') {
-                        addNewMessage(formattedError, 'ERROR');
+                    addNewMessage('Failed to strike target - ' + e?.message + ' ...', 'ERROR');
+                    set({ lastError: 'Failed to strike target - ' + e?.message });
 
-                        if (formattedError.includes('insufficient funds')) {
-                            set({ guessState: 'INSUFFICIENT_FUNDS' });
-                        }
-
-                        trackEvent('guess_transaction_error', {
-                            wallet_address: useWalletStore.getState().address,
-                            wallet_types: getWalletUserWallets(),
-                            error: formattedError,
-                        });
-
-                        if (formattedError.includes('Cell already hit')) {
-                            useGameStore.getState().addUnknownCell(x, y);
-                        }
-
-                        set({ lastError: formattedError });
-                    } else {
-                        addNewMessage('Failed to issue Guess - ' + e?.reason + ' ...', 'ERROR');
-                        set({ lastError: 'Failed to issue Guess - ' + e?.reason });
-
-                        trackEvent('guess_transaction_error', {
-                            wallet_address: useWalletStore.getState().address,
-                            wallet_types: getWalletUserWallets(),
-                            error: e?.reason,
-                        });
-                    }
+                    trackEvent('guess_transaction_error', {
+                        wallet_address: address,
+                        wallet_types: getWalletUserWallets(),
+                        wallet_used: connector,
+                        error: e?.message,
+                    });
                 }
             },
 
@@ -197,16 +165,16 @@ export const useContractStore = create<ContractStore>(
                 }
             },
 
-            setMisses: (latestMisses: string[][]) => {
+            setMisses: (latestMisses: FeedbackCoords[]) => {
                 const currentMisses = useGameStore.getState().missedCells;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
                 if (missesHaveUpdated) {
-                    const missedCells = latestMisses.map((entry) => {
-                        const [x, y] = getCellXY(parseInt(entry[0]), parseInt(entry[1]));
+                    const missedCells = latestMisses.map(({ x: col, y: row }) => {
+                        const [x, y] = getCellXY(col, row);
                         return {
-                            col: parseInt(entry[0]),
-                            row: parseInt(entry[1]),
+                            col,
+                            row,
                             x,
                             y,
                             state: 'MISSED',
@@ -216,21 +184,20 @@ export const useContractStore = create<ContractStore>(
                     set({ misses: latestMisses });
                     useGameStore.setState({ missedCells });
                     useGameStore.getState().setRevealedCells(latestMisses, 'MISS');
-                    useGameStore.getState().clearUnknownCells();
                 }
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
-            setHits: (latestHits: string[][]) => {
+            setHits: (latestHits: FeedbackCoords[]) => {
                 const currentHits = useGameStore.getState().hitCells;
                 const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
                 if (hitsHaveUpdated) {
-                    const hitCells = latestHits.map((entry) => {
-                        const [x, y] = getCellXY(parseInt(entry[0]), parseInt(entry[1]));
+                    const hitCells = latestHits.map(({ x: col, y: row }) => {
+                        const [x, y] = getCellXY(col, row);
                         return {
-                            col: parseInt(entry[0]),
-                            row: parseInt(entry[1]),
+                            col,
+                            row,
                             x,
                             y,
                             state: 'MISSED',
@@ -252,8 +219,8 @@ export const useContractStore = create<ContractStore>(
                 set({ prizePool: formatUnits(prizePool, 'ether') });
             },
 
-            setLastGuessCoords: (coords: string[]) => {
-                set({ lastGuessCoords: [parseInt(coords[0]), parseInt(coords[1])] });
+            setLastGuessCoords: (coords: number[]) => {
+                set({ lastGuessCoords: [coords[0], coords[1]] });
             },
         }),
         {
