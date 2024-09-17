@@ -20,6 +20,7 @@ export default function MetaMaskWalletBalance() {
     const { address, isConnected, connector } = useAccount();
     const { data: ethBalance, refetch: ethRefetch } = useBalance({
         address,
+        chainId: TEN_CHAIN_ID,
     });
     const { data: zenBalance, refetch: zenRefetch } = useBalance({
         address,
