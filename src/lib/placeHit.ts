@@ -1,5 +1,5 @@
-import { getTransactionReceipt, watchContractEvent, writeContract } from '@wagmi/core';
-import { Log, parseEther } from 'viem';
+import { getTransactionReceipt, writeContract } from '@wagmi/core';
+import { Log, parseEther, parseEventLogs } from 'viem';
 
 import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
 import { MOVE_FEE } from '@/lib/constants';
@@ -7,21 +7,6 @@ import { wagmiConfig } from '@/main';
 
 export default function placeHit(x: number, y: number): Promise<{ logs: Log[]; txHash: string }> {
     return new Promise((resolve, reject) => {
-        let txHash = '';
-        const unwatch = watchContractEvent(wagmiConfig, {
-            address: import.meta.env.VITE_CONTRACT_ADDRESS,
-            abi: BattleshipGameJson.abi,
-            eventName: 'HitFeedback',
-            onLogs(logs) {
-                unwatch();
-                resolve({
-                    txHash,
-                    logs,
-                });
-            },
-            pollingInterval: 2_00,
-        });
-
         writeContract(wagmiConfig, {
             abi: BattleshipGameJson.abi,
             address: import.meta.env.VITE_CONTRACT_ADDRESS,
@@ -29,16 +14,23 @@ export default function placeHit(x: number, y: number): Promise<{ logs: Log[]; t
             args: [x, y],
             value: parseEther(MOVE_FEE),
         })
-            .then((transactionHash) => {
-                txHash = transactionHash;
+            .then(async (txHash) => {
                 const intervalId = setInterval(async () => {
                     try {
-                        await getTransactionReceipt(wagmiConfig, {
-                            hash: transactionHash,
+                        const receipt = await getTransactionReceipt(wagmiConfig, {
+                            hash: txHash,
+                        });
+                        const logs = parseEventLogs({
+                            abi: BattleshipGameJson.abi,
+                            logs: receipt.logs,
                         });
                         clearInterval(intervalId);
+                        resolve({
+                            logs,
+                            txHash,
+                        });
                     } catch (error) {}
-                }, 500);
+                }, 400);
             })
             .catch((error) => {
                 reject(error);
