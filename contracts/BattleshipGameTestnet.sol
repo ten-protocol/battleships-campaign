@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract BSOptimized {
+contract BattleshipGameTestnet {
     uint8 constant gridSize = 100;
-    uint16 constant totalShips = 249;
+    uint8 constant totalShips = 249;
     uint8 constant shipLength = 3;
     uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
     uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
@@ -22,15 +22,13 @@ contract BSOptimized {
     }
 
     Ship[totalShips] private ships;
-    address public owner;
-    mapping(uint16 => uint16) private positionToShipIndex;
+    mapping(uint16 => uint8) private positionToShipIndex;
     mapping(uint16 => bool) private hits;
     mapping(uint16 => bool) private misses;
-    mapping(address => bool) private admins;
     uint256 private seed;
     uint256 private nonce = 0;
     bool[totalShips] private graveyard;
-    uint16 private sunkShipsCount;
+    uint8 private sunkShipsCount;
     bool public gameOver;
     Position[] private allHits;
     Position[] private allMisses;
@@ -39,42 +37,21 @@ contract BSOptimized {
     mapping(address => uint16) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
-    uint256 public totalZENAllocated;
+    uint256 public totalZENAllocated; // Track total ZEN tokens allocated
 
     IERC20 public rewardToken;
 
     event GameOver(address winner, uint256 totalZENAllocated);
-    event HitFeedback(
-        address indexed user,
-        uint8[2] guessedCoords,
-        bool success,
-        bool sunk,
-        uint256 totalZENAllocated,
-        uint256 zenTransferred,
-        bool uniqueStrike
-    );
+    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred, bool uniqueStrike);
 
     constructor(address tokenAddress) {
-        owner = msg.sender;
-        admins[owner] = true;
         rewardToken = IERC20(tokenAddress);
         seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
         generatePositions();
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, 'Only owner can call this function.');
-        _;
-    }
-
-    modifier onlyAdmin() {
-        require(admins[msg.sender], 'Only admins can call this function');
-        _;
-    }
-
-
     function generatePositions() private {
-        uint16 index = 0;
+        uint8 index = 0;
         while (index < totalShips) {
             uint256 hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
             for (uint8 i = 0; i < 36 && index < totalShips; i++) {
@@ -112,12 +89,12 @@ contract BSOptimized {
 
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, 'Game is over, no more hits accepted');
-        // require(msg.value == 0.00443 ether, 'Incorrect fee amount');
+        require(msg.value == 0.00443 ether, 'Incorrect fee amount');
         uint16 positionKey = packCoordinates(x, y);
 
         if (hits[positionKey]) {
             payable(msg.sender).transfer(msg.value);
-            emit HitFeedback(msg.sender, [x, y], false, false, totalZENAllocated, 0, false);
+            emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0, false);
         } else {
             _processHit(msg.sender, x, y);
         }
@@ -133,7 +110,7 @@ contract BSOptimized {
         totalHits++;
         playerHits[player]++;
 
-        uint16 shipIndex = positionToShipIndex[positionKey];
+        uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
             shipIndex--;
             success = true;
@@ -168,7 +145,7 @@ contract BSOptimized {
         } else {
             success = false;
             misses[positionKey] = true;
-            allMisses.push(Position(x, y)); // Record the miss
+            allMisses.push(Position(x, y));
         }
 
         if (zenTransferred > 0) {
@@ -176,7 +153,7 @@ contract BSOptimized {
             totalZENAllocated += zenTransferred;
         }
 
-        emit HitFeedback(player, [x, y], success, sunk, totalZENAllocated, zenTransferred, true);
+        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred, true);
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
@@ -187,29 +164,5 @@ contract BSOptimized {
 
     function getZenTokenBalance() public view returns (uint256) {
         return rewardToken.balanceOf(address(this));
-    }
-
-    function getAllHits() public view returns (Position[] memory) {
-        return allHits;
-    }
-
-    function getAllMisses() external view onlyAdmin returns (Position[] memory) {
-        return allMisses;
-    }
-
-    function getGraveyard() external view onlyAdmin returns (bool[totalShips] memory) {
-        return graveyard;
-    }
-
-    /// @notice Adds an admin to the game.
-    /// @param _admin The address to be added as an admin.
-    function addAdmin(address _admin) external onlyOwner {
-        admins[_admin] = true;
-    }
-
-    /// @notice Removes an admin from the game.
-    /// @param _admin The address to be removed from the admin list.
-    function removeAdmin(address _admin) external onlyOwner {
-        admins[_admin] = false;
     }
 }
