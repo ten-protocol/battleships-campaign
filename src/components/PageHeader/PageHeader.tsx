@@ -17,6 +17,10 @@ export default function PageHeader() {
         toggleHelpWindow();
     };
 
+    const handleTpoints = () => {
+        window.open('https://ten-protocol.notion.site/t-points-System-49c994fac5b0415fa3ad75452e0f7db3', '_blank');
+    };    
+
     const trackFaucetEvent = () => {
         trackEvent('ten_faucet', {
             wallet_address: useWalletStore.getState().address,
@@ -28,6 +32,9 @@ export default function PageHeader() {
         <div className="flex flex-col sm:flex-row mt-5 justify-between">
             <img src={logo} alt="test" width={120} />
             <div className="flex gap-4">
+                <Button variant="hoverBorder" onClick={handleTpoints}>
+                    T-Points
+                </Button>
                 <Button variant="hoverBorder" onClick={handleShowGameRules}>
                     How to play
                 </Button>
