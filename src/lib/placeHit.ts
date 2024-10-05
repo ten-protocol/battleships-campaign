@@ -24,11 +24,11 @@ export default function placeHit(x: number, y: number): Promise<{ logs: Log[]; t
                             abi: BattleshipGameJson.abi,
                             logs: receipt.logs,
                         });
-                        clearInterval(intervalId);
                         resolve({
                             logs,
                             txHash,
                         });
+                        clearInterval(intervalId);
                     } catch (error) {}
                 }, 400);
             })
