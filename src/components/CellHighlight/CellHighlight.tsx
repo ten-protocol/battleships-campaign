@@ -5,7 +5,7 @@ import { Container } from '@pixi/react';
 import { useContractStore } from '@/stores/contractStore';
 import { useGameStore } from '@/stores/gameStore';
 
-import CellHighlightParticle from './CellHighlightParticle';
+import CellHighlightParticle from './CellHighLightParticle';
 import {
     DefaultHighlightState,
     ErrorHighlightState,

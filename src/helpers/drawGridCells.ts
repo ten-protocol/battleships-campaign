@@ -7,13 +7,13 @@ import createHexagon from './createHexagon';
 
 export default function drawGridCells(
     g: PixiGraphics,
-    cells: { x: number; y: number }[],
-    state?: RevealedCellType
+    cells: { x: number; y: number; state?: RevealedCellType }[]
 ) {
     g.clear();
     g.position.set(0, 0);
-    cells.forEach(({ x, y }) => {
+    cells.forEach(({ x, y, state }) => {
         if (!state) {
+            g.beginFill(0xffffff, 0);
             g.lineStyle(1, 0x464646, 1);
         }
         if (state === 'MISS') {

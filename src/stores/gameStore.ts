@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -19,8 +20,6 @@ export type RevealedCellType = 'HIT' | 'MISS' | 'UNKNOWN';
 
 export type GameState = {
     grid: Cell[];
-    missedCells: Cell[];
-    hitCells: Cell[];
     revealedCells: { [key: string]: RevealedCellType };
     hoveredCell: Cell | null;
     scrollPosition: [number, number];
@@ -45,8 +44,6 @@ export const useGameStore = create<GameStore>(
     persist(
         (set, get) => ({
             grid: [],
-            missedCells: [],
-            hitCells: [],
             revealedCells: {},
             hoveredCell: null,
             scrollPosition: [0, 0],
@@ -95,15 +92,14 @@ export const useGameStore = create<GameStore>(
             },
 
             setRevealedCells: (cells: FeedbackCoords[], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
-                const newRevealedCells = { ...get().revealedCells };
-                for (let i = 0; i < cells.length; i++) {
-                    const key = `${cells[i].x}_${cells[i].y}`;
-                    if (!newRevealedCells[key] || newRevealedCells[key] === 'UNKNOWN') {
-                        newRevealedCells[key] = type;
-                    }
-                }
-
-                set({ revealedCells: newRevealedCells });
+                set(
+                    produce((state) => {
+                        for (let i = 0; i < cells.length; i++) {
+                            const key = `${cells[i].x}_${cells[i].y}`;
+                            state.revealedCells[key] = type;
+                        }
+                    })
+                );
             },
 
             setScrollPosition: (x: number, y: number) => {
@@ -118,9 +114,7 @@ export const useGameStore = create<GameStore>(
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,
             storage: createJSONStorage(() => localStorage),
-            partialize: ({ hitCells, missedCells, revealedCells, helpWindowOpen }) => ({
-                hitCells,
-                missedCells,
+            partialize: ({ revealedCells, helpWindowOpen }) => ({
                 revealedCells,
                 helpWindowOpen,
             }),

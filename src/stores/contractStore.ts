@@ -3,7 +3,6 @@ import { WriteContractErrorType } from 'viem';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import getCellXY from '@/helpers/getCellXY';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import placeHit from '@/lib/placeHit';
 import { trackEvent } from '@/lib/trackEvent';
@@ -166,46 +165,21 @@ export const useContractStore = create<ContractStore>(
             },
 
             setMisses: (latestMisses: FeedbackCoords[]) => {
-                const currentMisses = useGameStore.getState().missedCells;
+                const currentMisses = get().misses;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
                 if (missesHaveUpdated) {
-                    const missedCells = latestMisses.map(({ x: col, y: row }) => {
-                        const [x, y] = getCellXY(col, row);
-                        return {
-                            col,
-                            row,
-                            x,
-                            y,
-                            state: 'MISSED',
-                        };
-                    });
-
                     set({ misses: latestMisses });
-                    useGameStore.setState({ missedCells });
                     useGameStore.getState().setRevealedCells(latestMisses, 'MISS');
                 }
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
             setHits: (latestHits: FeedbackCoords[]) => {
-                const currentHits = useGameStore.getState().hitCells;
-                const hitsHaveUpdated = latestHits.length !== currentHits.length;
+                const currentHits = get().hits;                const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
                 if (hitsHaveUpdated) {
-                    const hitCells = latestHits.map(({ x: col, y: row }) => {
-                        const [x, y] = getCellXY(col, row);
-                        return {
-                            col,
-                            row,
-                            x,
-                            y,
-                            state: 'MISSED',
-                        };
-                    });
-
                     set({ hits: latestHits });
-                    useGameStore.setState({ hitCells });
                     useGameStore.getState().setRevealedCells(latestHits, 'HIT');
                 }
             },

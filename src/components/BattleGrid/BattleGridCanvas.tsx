@@ -1,19 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { Container, Stage } from '@pixi/react';
+import { Stage } from '@pixi/react';
 import { Application, ICanvas } from 'pixi.js';
 
-import BattleGridBackgroundCells from '@/components/BattleGrid/BattleGridBackgoundCells';
+import BattleGridCells from '@/components/BattleGrid/BattleGridCells';
+import BattleGridControls from '@/components/BattleGrid/BattleGridControls';
+import BattleGridCursor from '@/components/BattleGrid/BattleGridCursor';
+import BattleGridExplosion from '@/components/BattleGrid/BattleGridExplosion';
 import CellHighlight from '@/components/CellHighlight/CellHighlight';
-import { COLS, HEX_GRID_MARGIN, HEX_HEIGHT, HEX_WIDTH, ROWS } from '@/lib/constants';
 
-import BattleGridCursor from './BattleGridCursor';
-import BattleGridExplosion from './BattleGridExplosion';
-import BattleGridHits from './BattleGridHits';
-import BattleGridMisses from './BattleGridMisses';
+type Props = {
+    width?: number;
+    height?: number;
+};
 
-export default function BattleGridCanvas() {
+export default function BattleGridCanvas({ width = 900, height = 500 }: Props) {
     const [app, setApp] = useState<Application<ICanvas>>();
+    const canvasRef = useRef<Stage>(null);
 
     useEffect(() => {
         if (!app?.ticker) return;
@@ -41,9 +44,10 @@ export default function BattleGridCanvas() {
 
     return (
         <Stage
+            ref={canvasRef}
             onMount={(app) => setApp(app)}
-            width={HEX_WIDTH * COLS + HEX_GRID_MARGIN * 1.5}
-            height={HEX_HEIGHT * ROWS * 0.75 + HEX_GRID_MARGIN}
+            width={width}
+            height={height}
             options={{
                 backgroundAlpha: 0,
                 antialias: false,
@@ -51,14 +55,12 @@ export default function BattleGridCanvas() {
                 autoDensity: true,
             }}
         >
-            <Container>
-                <BattleGridBackgroundCells />
-                <BattleGridMisses />
-                <BattleGridHits />
-            </Container>
-            <CellHighlight />
-            <BattleGridExplosion particleCount={40} duration={1000} />
-            <BattleGridCursor />
+            <BattleGridControls width={width} height={height}>
+                <BattleGridCells />
+                <CellHighlight />
+                <BattleGridExplosion particleCount={40} duration={1000} />
+                <BattleGridCursor />
+            </BattleGridControls>
         </Stage>
     );
 }
