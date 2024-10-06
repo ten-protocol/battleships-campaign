@@ -21,7 +21,7 @@ export default function BattleGrid() {
                 setDisplayGrid(true);
             }, 3000);
         }
-    }, [isConnected]);
+    }, [isConnected, chainId]);
 
     const animation = {
         initial: { opacity: 0 },

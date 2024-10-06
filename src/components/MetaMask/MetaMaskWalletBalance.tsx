@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import { Address } from 'viem';
-import { useAccount, useBalance, useChainId } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 
 import Button from '@/components/Button/Button';
 import { FAUCET_URL, MOVE_FEE, PLAY_TOKEN_SYMBOL, TEN_CHAIN_ID } from '@/lib/constants';
@@ -16,10 +16,10 @@ export default function MetaMaskWalletBalance() {
         state.setConnector,
     ]);
     const moves = usePlayTrackerStore((state) => state.moves);
-    const chainId = useChainId();
-    const { address, isConnected, connector } = useAccount();
+    const { address, isConnected, connector, chainId } = useAccount();
     const { data: ethBalance, refetch: ethRefetch } = useBalance({
         address,
+        chainId: TEN_CHAIN_ID,
     });
     const { data: zenBalance, refetch: zenRefetch } = useBalance({
         address,
@@ -39,7 +39,7 @@ export default function MetaMaskWalletBalance() {
     useEffect(() => {
         zenRefetch();
         ethRefetch();
-    }, [moves]);
+    }, [moves, chainId, isConnected, address]);
 
     const numberOfPlays = ethBalance?.value
         ? Math.floor(parseFloat(ethBalance.formatted) / parseFloat(MOVE_FEE))
