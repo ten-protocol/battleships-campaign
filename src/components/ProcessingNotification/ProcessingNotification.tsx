@@ -161,11 +161,6 @@ export default function ProcessingNotification() {
                 <p className="text-xl text-center w-full my-2">
                     {lastReward} {PLAY_TOKEN_SYMBOL} Awarded
                 </p>
-
-                <div className="flex flex-col items-center">
-                    <p>Had fun? Tell your frens!</p>
-                    <SocialShare />
-                </div>
             </div>
         );
     }
