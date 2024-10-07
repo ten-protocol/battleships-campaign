@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
+import SocialShare from '@/components/SocialShare/SocialShare';
 import {
     FAUCET_URL,
     FINAL_SINK_REWARD,
@@ -14,10 +15,11 @@ import {
 import { useContractStore } from '@/stores/contractStore';
 
 export default function ProcessingNotification() {
-    const [guessState, resetGuessState, lastReward] = useContractStore((state) => [
+    const [guessState, resetGuessState, lastReward, gameOver] = useContractStore((state) => [
         state.guessState,
         state.resetGuessState,
         state.lastReward,
+        state.gameOver,
     ]);
 
     let footerContent = <div />;
@@ -29,7 +31,7 @@ export default function ProcessingNotification() {
 
     const CloseButton = <Button onClick={handleClose}>Close</Button>;
 
-    if (guessState === 'IDLE') return null;
+    if (guessState === 'IDLE' || gameOver) return null;
 
     if (guessState === 'STARTED') {
         footerContent = <p>Processing...</p>;
@@ -159,6 +161,28 @@ export default function ProcessingNotification() {
                 <p className="text-xl text-center w-full my-2">
                     {lastReward} {PLAY_TOKEN_SYMBOL} Awarded
                 </p>
+
+                <div className="flex flex-col items-center">
+                    <p>Had fun? Tell your frens!</p>
+                    <SocialShare />
+                </div>
+            </div>
+        );
+    }
+
+    if (guessState === 'WINNING_HIT') {
+        footerContent = <div>{CloseButton}</div>;
+        bodyContent = (
+            <div className="flex flex-col items-start">
+                <p className="text-lg bg-blue-600 inline-block px-1 mb-2">FINAL SHIP DESTROYED</p>
+                <p className="text-sm inline-block px-1">Game over. Final ship eliminated.</p>
+                <p className="text-xl text-center w-full my-4">
+                    {lastReward} {PLAY_TOKEN_SYMBOL} Awarded
+                </p>
+                <div className="flex flex-col items-center self-center">
+                    <p>Had fun? Tell your frens!</p>
+                    <SocialShare />
+                </div>
             </div>
         );
     }

@@ -13,10 +13,12 @@ import { useWalletStore } from '@/stores/walletStore';
 import { useGameStore } from './gameStore';
 
 export type ContractState = {
-    hits: FeedbackCoords[];
-    misses: FeedbackCoords[];
-    graveyard: boolean[];
+    hits: number[];
+    misses: number[];
+    graveyard: null | number;
     gameOver: boolean;
+    gridSize: number;
+    totalShips: number;
     prizePool: string;
     guessState: GuessState;
     lastGuessCoords: number[] | null;
@@ -28,13 +30,13 @@ export type ContractActions = {
     submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
     setPrizePool: (prizePool: string) => void;
-    setHits: (hits: FeedbackCoords[]) => void;
-    setMisses: (misses: FeedbackCoords[]) => void;
-    setGraveyard: (graveyard: boolean[]) => void;
+    setHits: (hits: number[]) => void;
+    setMisses: (misses: number[]) => void;
+    setGraveyard: (graveyard: number) => void;
     setLastGuessCoords: (guessedCoords: number[]) => void;
+    gameInit: (gameOver: boolean, gridSize: number, totalShips: number) => void;
+    setGameOver: () => void;
 };
-
-export type FeedbackCoords = { x: number; y: number };
 
 export type ContractStore = ContractState & ContractActions;
 
@@ -47,15 +49,18 @@ export type GuessState =
     | 'RECEIVED_RECEIPT'
     | 'HIT'
     | 'MISS'
-    | 'ALREADY_HIT';
+    | 'ALREADY_HIT'
+    | 'WINNING_HIT';
 
 export const useContractStore = create<ContractStore>(
     persist(
         (set, get) => ({
             hits: [],
             misses: [],
-            graveyard: [],
+            graveyard: 0,
             gameOver: false,
+            gridSize: 0,
+            totalShips: 0,
             prizePool: '',
             guessState: 'IDLE' as GuessState,
             lastError: '',
@@ -80,19 +85,20 @@ export const useContractStore = create<ContractStore>(
 
                 try {
                     const { logs, txHash } = await placeHit(x, y);
-
+                    const lastPlay = logs.length === 2;
                     trackEvent('guess_transaction_success', {
                         wallet_address: address,
                         wallet_types: getWalletUserWallets(),
                         wallet_used: connector,
                     });
                     addNewMessage('Target strike tx: ' + txHash);
-                    const hitFeedbackLog = logs[0];
+
+                    const hitFeedbackLog = logs[lastPlay ? 1 : 0];
 
                     const {
                         allHits,
                         allMisses,
-                        graveyard,
+                        sunkShipsCount,
                         success,
                         sunk,
                         guessedCoords,
@@ -108,13 +114,23 @@ export const useContractStore = create<ContractStore>(
                         sunk,
                         zenTransferred
                     );
-                    const guessState = success ? 'HIT' : uniqueStrike ? 'MISS' : 'ALREADY_HIT';
+                    let guessState: GuessState = success ? 'HIT' : 'MISS';
+
+                    if (lastPlay) {
+                        guessState = 'WINNING_HIT';
+                    }
+                    if (!uniqueStrike) {
+                        guessState = 'ALREADY_HIT';
+                    }
 
                     if (guessState === 'MISS') {
                         addNewMessage('Missed. Shot failed to find target.');
                     }
                     if (guessState === 'HIT') {
                         addNewMessage('DIRECT HIT. Shot successfully found target.', 'SUCCESS');
+                    }
+                    if (guessState === 'WINNING_HIT') {
+                        addNewMessage('WINNING HIT. ALL SHIPS SUNK.', 'SUCCESS');
                     }
                     if (guessState === 'ALREADY_HIT') {
                         addNewMessage(
@@ -124,7 +140,7 @@ export const useContractStore = create<ContractStore>(
 
                     get().setHits(allHits);
                     get().setMisses(allMisses);
-                    get().setGraveyard(graveyard);
+                    get().setGraveyard(sunkShipsCount);
                     set({ guessState });
                     set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
                     get().setLastGuessCoords(guessedCoords);
@@ -133,6 +149,12 @@ export const useContractStore = create<ContractStore>(
                     const e = error as WriteContractErrorType;
 
                     set({ guessState: 'ERROR' });
+
+                    if (e.message && e.message.includes('Game is over')) {
+                        console.log('GAME OVER');
+                        set({ gameOver: true });
+                        return;
+                    }
 
                     addNewMessage('Failed to strike target - ' + e?.message + ' ...', 'ERROR');
                     set({ lastError: 'Failed to strike target - ' + e?.message });
@@ -151,20 +173,13 @@ export const useContractStore = create<ContractStore>(
                     guessState: 'IDLE',
                 }),
 
-            setGraveyard: (latestGraveyard: boolean[]) => {
+            setGraveyard: (sunkShipsCount: number) => {
                 const addNewMessage = useMessageStore.getState().addNewMessage;
-
-                const graveyardHasUpdated =
-                    get().graveyard.length !== latestGraveyard.length ||
-                    get().graveyard.some((value, index) => value !== latestGraveyard[index]);
-
-                if (graveyardHasUpdated) {
-                    set({ graveyard: latestGraveyard });
-                    addNewMessage('Graveyard info updated.');
-                }
+                set({ graveyard: sunkShipsCount });
+                addNewMessage('Graveyard info updated.');
             },
 
-            setMisses: (latestMisses: FeedbackCoords[]) => {
+            setMisses: (latestMisses: number[]) => {
                 const currentMisses = get().misses;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
@@ -175,8 +190,9 @@ export const useContractStore = create<ContractStore>(
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
-            setHits: (latestHits: FeedbackCoords[]) => {
-                const currentHits = get().hits;                const hitsHaveUpdated = latestHits.length !== currentHits.length;
+            setHits: (latestHits: number[]) => {
+                const currentHits = get().hits;
+                const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
                 if (hitsHaveUpdated) {
                     set({ hits: latestHits });
@@ -195,6 +211,14 @@ export const useContractStore = create<ContractStore>(
 
             setLastGuessCoords: (coords: number[]) => {
                 set({ lastGuessCoords: [coords[0], coords[1]] });
+            },
+
+            gameInit: (gameOver: boolean, gridSize: number, totalShips: number) => {
+                set({ gameOver, gridSize, totalShips });
+            },
+
+            setGameOver: () => {
+                set({ gameOver: true });
             },
         }),
         {

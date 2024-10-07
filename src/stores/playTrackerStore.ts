@@ -79,7 +79,7 @@ export const usePlayTrackerStore = create<PlayTrackerStore>(
                             state.games[address].misses++;
                         }
 
-                        state.moves++
+                        state.moves++;
                     })
                 );
             },

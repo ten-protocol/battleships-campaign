@@ -3,21 +3,21 @@ import { useAccount } from 'wagmi';
 import ShipFresh from '@/assets/shipFresh.svg';
 import ShipSunk from '@/assets/shipSunk.svg';
 import HudWindow from '@/components/HudWindow/HudWindow';
-import { SHIP_SIZE } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
-import { useGameStore } from '@/stores/gameStore';
 
 export default function Graveyard() {
-    const graveyard = useContractStore((state) => state.graveyard);
+    const [graveyard, totalShips] = useContractStore((state) => [
+        state.graveyard,
+        state.totalShips,
+    ]);
     const { isConnected } = useAccount();
-    const revealedCells = useGameStore((state) => state.revealedCells);
-    const sunkShipTotal = graveyard.reduce((nxt, cur) => (cur ? nxt : nxt + 1), 0);
-    const fleetHealth =
-        100 -
-        (Object.values(revealedCells).filter((e) => e === 'HIT').length /
-            (graveyard.length * SHIP_SIZE)) *
-            100;
-    const unknownState = graveyard.length === 0;
+    const fleetHealth = graveyard !== null ? 100 - (graveyard / totalShips) * 100 : 0;
+    const unknownState = graveyard === null;
+    const graveyardShips = !unknownState
+        ? Array<boolean>(totalShips)
+              .fill(false)
+              .map((_, i) => i < graveyard)
+        : [];
 
     const Footer = (
         <div className="text-right">
@@ -32,7 +32,7 @@ export default function Graveyard() {
             )}
 
             <p className="text-3xl mt-5 whitespace-nowrap font-bold">
-                {unknownState ? '???' : sunkShipTotal}/{unknownState ? '???' : graveyard.length}
+                {unknownState ? '???' : graveyard}/{unknownState ? '???' : totalShips}
             </p>
             <h3 className="text-sm whitespace-nowrap">Ships remaining</h3>
         </div>
@@ -49,7 +49,7 @@ export default function Graveyard() {
                 <h3 className="text-lg text-center my-3">No Data</h3>
             ) : (
                 <div className="grid grid-cols-10 gap-1 my-2">
-                    {graveyard.map((ship, i) => (
+                    {graveyardShips.map((ship, i) => (
                         <img
                             key={i}
                             src={ship ? ShipSunk : ShipFresh}

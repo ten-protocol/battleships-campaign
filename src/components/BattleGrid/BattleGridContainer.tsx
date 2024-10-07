@@ -2,7 +2,8 @@ import { UIEvent, useEffect } from 'react';
 
 import { useMeasure } from '@react-hookz/web';
 
-import { COLS, GRID_CONTAINER_HEIGHT, ROWS } from '@/lib/constants';
+import { GRID_CONTAINER_HEIGHT } from '@/lib/constants';
+import { useContractStore } from '@/stores/contractStore';
 import { useGameStore } from '@/stores/gameStore';
 
 import BattleGridCanvas from './BattleGridCanvas';
@@ -16,12 +17,15 @@ const styles = {
 };
 
 export default function BattleGridContainer() {
-    const initGrid = useGameStore((state) => state.initGrid);
-    const [setScrollPosition] = useGameStore((state) => [state.setScrollPosition]);
+    const gridSize = useContractStore((state) => state.gridSize);
+    const [initGrid, setScrollPosition] = useGameStore((state) => [
+        state.initGrid,
+        state.setScrollPosition,
+    ]);
     const [measures, elementRef] = useMeasure<HTMLDivElement>();
 
     useEffect(() => {
-        initGrid(COLS, ROWS);
+        initGrid(gridSize, gridSize);
     }, []);
 
     const handleScroll = (event: UIEvent<HTMLDivElement>) => {

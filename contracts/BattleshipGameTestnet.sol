@@ -4,9 +4,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract BattleshipGameTestnet {
-    uint8 constant gridSize = 100;
-    uint8 constant totalShips = 249;
-    uint8 constant shipLength = 3;
     uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
     uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
     uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
@@ -18,20 +15,23 @@ contract BattleshipGameTestnet {
 
     struct Ship {
         Position start;
-        bool[shipLength] hits;
+        uint8 length;
+        bool isHorizontal;
+        bool[] hits;
     }
 
-    Ship[totalShips] private ships;
+    Ship[] private ships;
     mapping(uint16 => uint8) private positionToShipIndex;
     mapping(uint16 => bool) private hits;
     mapping(uint16 => bool) private misses;
     uint256 private seed;
     uint256 private nonce = 0;
-    bool[totalShips] private graveyard;
     uint8 private sunkShipsCount;
     bool public gameOver;
-    Position[] private allHits;
-    Position[] private allMisses;
+    uint8 public gridSize;
+    uint8 public totalShips; // Adjusted total ships
+    uint16[] private allHits;
+    uint16[] private allMisses;
 
     mapping(address => uint16) private playerHits;
     mapping(address => uint16) private playerSinks;
@@ -42,40 +42,83 @@ contract BattleshipGameTestnet {
     IERC20 public rewardToken;
 
     event GameOver(address winner, uint256 totalZENAllocated);
-    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred, bool uniqueStrike);
+    event HitFeedback(
+        address indexed user,
+        uint8[2] guessedCoords,
+        bool success,
+        bool sunk,
+        uint16[] allHits,
+        uint16[] allMisses,
+        uint8 sunkShipsCount,
+        uint256 totalZENAllocated,
+        uint256 zenTransferred,
+        bool uniqueStrike
+    );
 
-    constructor(address tokenAddress) {
+    constructor(address tokenAddress, uint8 _gridSize, uint8 _totalShips) {
         rewardToken = IERC20(tokenAddress);
-        seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
+        gridSize = _gridSize;
+        totalShips = _totalShips;
+        seed = uint256(
+            keccak256(
+                abi.encodePacked(block.difficulty, block.timestamp, msg.sender)
+            )
+        );
         generatePositions();
     }
 
     function generatePositions() private {
-        uint8 index = 0;
-        while (index < totalShips) {
+        while (ships.length < totalShips) {
             uint256 hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
-            for (uint8 i = 0; i < 36 && index < totalShips; i++) {
-                uint8 x = uint8(hash & 0x7F) % gridSize;
-                uint8 y = uint8((hash >> 7) & 0x7F) % gridSize;
+            for (uint8 i = 0; i < 36 && ships.length < totalShips; i++) {
+                uint8 x = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 y = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 length = (uint8(hash & 0x03)) + 2;
+                hash >>= 2;
+                bool isHorizontal = (hash & 0x01) == 1;
+                hash >>= 1;
 
-                if (isPositionUniqueAndFits(x, y)) {
-                    ships[index].start = Position(x, y);
-                    for (uint8 j = 0; j < shipLength; j++) {
-                        uint16 positionKey = packCoordinates(x + j, y);
+                if (isPositionUniqueAndFits(x, y, length, isHorizontal)) {
+                    ships.push(Ship({
+                        start: Position(x, y),
+                        length: length,
+                        isHorizontal: isHorizontal,
+                        hits: new bool[](length)
+                    }));
+                    uint8 index = uint8(ships.length - 1);
+                    for (uint8 j = 0; j < length; j++) {
+                        uint8 posX = x + (isHorizontal ? j : 0);
+                        uint8 posY = y + (isHorizontal ? 0 : j);
+                        uint16 positionKey = packCoordinates(posX, posY);
                         positionToShipIndex[positionKey] = index + 1;
                     }
-                    index++;
                 }
-                hash >>= 14;
+                if (hash < 0xFF) {
+                    nonce++;
+                    hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
+                }
             }
             nonce++;
         }
     }
 
-    function isPositionUniqueAndFits(uint8 x, uint8 y) private view returns (bool) {
-        if (x + shipLength > gridSize) return false;
-        for (uint8 j = 0; j < shipLength; j++) {
-            uint16 positionKey = packCoordinates(x + j, y);
+    function isPositionUniqueAndFits(
+        uint8 x,
+        uint8 y,
+        uint8 length,
+        bool isHorizontal
+    ) private view returns (bool) {
+        if (isHorizontal) {
+            if (x + length > gridSize) return false;
+        } else {
+            if (y + length > gridSize) return false;
+        }
+        for (uint8 j = 0; j < length; j++) {
+            uint8 posX = x + (isHorizontal ? j : 0);
+            uint8 posY = y + (isHorizontal ? 0 : j);
+            uint16 positionKey = packCoordinates(posX, posY);
             if (positionToShipIndex[positionKey] != 0) {
                 return false;
             }
@@ -88,13 +131,24 @@ contract BattleshipGameTestnet {
     }
 
     function hit(uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.00443 ether, 'Incorrect fee amount');
+        require(!gameOver, "Game is over, no more hits accepted");
+        require(msg.value == 0.00443 ether, "Incorrect fee amount");
         uint16 positionKey = packCoordinates(x, y);
 
         if (hits[positionKey]) {
             payable(msg.sender).transfer(msg.value);
-            emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0, false);
+            emit HitFeedback(
+                msg.sender,
+                [x, y],
+                false,
+                false,
+                allHits,
+                allMisses,
+                sunkShipsCount,
+                totalZENAllocated,
+                0,
+                false
+            );
         } else {
             _processHit(msg.sender, x, y);
         }
@@ -112,23 +166,25 @@ contract BattleshipGameTestnet {
 
         uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
-            shipIndex--;
+            shipIndex--; // Adjust for index starting at 0
             success = true;
             Ship storage ship = ships[shipIndex];
-            uint8 hitIndex = x - ship.start.x;
-            ship.hits[hitIndex] = true;
-            allHits.push(Position(x, y));
+            uint8 hitIndex = ship.isHorizontal ? (x - ship.start.x) : (y - ship.start.y);
 
+            ship.hits[hitIndex] = true; // Record the hit
+            allHits.push(positionKey);
+
+            // Check if the ship is sunk
             bool allHit = true;
-            for (uint8 i = 0; i < shipLength; i++) {
+            for (uint8 i = 0; i < ship.length; i++) {
                 if (!ship.hits[i]) {
                     allHit = false;
                     break;
                 }
             }
+
             if (allHit) {
                 sunk = true;
-                graveyard[shipIndex] = true;
                 sunkShipsCount++;
                 playerSinks[player]++;
                 if (sunkShipsCount == totalShips) {
@@ -145,18 +201,36 @@ contract BattleshipGameTestnet {
         } else {
             success = false;
             misses[positionKey] = true;
-            allMisses.push(Position(x, y));
+            allMisses.push(positionKey);
         }
 
         if (zenTransferred > 0) {
-            require(rewardToken.transfer(player, zenTransferred), "Token transfer failed");
+            require(
+                rewardToken.transfer(player, zenTransferred),
+                "Token transfer failed"
+            );
             totalZENAllocated += zenTransferred;
         }
 
-        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred, true);
+        emit HitFeedback(
+            player,
+            [x, y],
+            success,
+            sunk,
+            allHits,
+            allMisses,
+            sunkShipsCount,
+            totalZENAllocated,
+            zenTransferred,
+            true
+        );
     }
 
-    function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
+    function getPersonalStats()
+    public
+    view
+    returns (uint16 personalHits, uint16 personalSinks)
+    {
         personalHits = playerHits[msg.sender];
         personalSinks = playerSinks[msg.sender];
         return (personalHits, personalSinks);
@@ -164,5 +238,9 @@ contract BattleshipGameTestnet {
 
     function getZenTokenBalance() public view returns (uint256) {
         return rewardToken.balanceOf(address(this));
+    }
+
+    function gameInfo() public returns(bool, uint8, uint8) {
+        return (gameOver, gridSize, totalShips);
     }
 }

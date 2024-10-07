@@ -1,15 +1,16 @@
-import HudWindow from '@/components/HudWindow/HudWindow';
 import { useAccount } from 'wagmi';
 
+import HudWindow from '@/components/HudWindow/HudWindow';
 import formatNumber from '@/helpers/formatNumber';
-import { COLS, ROWS } from '@/lib/constants';
+import { useContractStore } from '@/stores/contractStore';
 import { useGameStore } from '@/stores/gameStore';
 
 export default function CellsRemaining() {
     const revealedCells = useGameStore((state) => state.revealedCells);
+    const gridSize = useContractStore((state) => state.gridSize);
     const { isConnected } = useAccount();
     const numberOfRevealedCells = Object.keys(revealedCells).length;
-    const totalCells = ROWS * COLS;
+    const totalCells = gridSize * gridSize;
     const unknownState = numberOfRevealedCells === 0;
     const Disconnected = <p className="text-center">Initialization Required</p>;
 
