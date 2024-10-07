@@ -22,23 +22,28 @@ export default function BattleGrid() {
     const [displayGrid, setDisplayGrid] = useState(false);
     const connectedToTen = chainId === TEN_CHAIN_ID && isConnected;
 
-    const result = useReadContract({
+    const {
+        data: gameInfo,
+        isError,
+        isSuccess,
+    } = useReadContract({
         abi: BattleshipGameJson.abi,
         address: import.meta.env.VITE_CONTRACT_ADDRESS,
         functionName: 'gameInfo',
         query: {
             enabled: connectedToTen,
+            retry: false,
         },
     });
 
     useEffect(() => {
-        if (result.isSuccess && result.data && !displayGrid) {
+        if (isSuccess && gameInfo && !displayGrid) {
             //TODO: Revisit
             //@ts-ignore
-            gameInit(...result.data);
+            gameInit(...gameInfo);
             setDisplayGrid(true);
         }
-    }, [result]);
+    }, [isSuccess, isError, isSuccess]);
 
     const animation = {
         initial: { opacity: 0 },
@@ -50,8 +55,8 @@ export default function BattleGrid() {
     return (
         <HudWindow
             headerTitle="Battle Grid"
-            isOpen={connectedToTen}
-            closedContent={<DisconnectedScreen />}
+            isOpen={connectedToTen && isSuccess}
+            closedContent={<DisconnectedScreen contractError={isError} />}
         >
             {gameOver ? (
                 <div className="text-center flex flex-col gap-4 mx-6">

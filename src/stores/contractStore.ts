@@ -24,6 +24,7 @@ export type ContractState = {
     lastGuessCoords: number[] | null;
     lastError: string;
     lastReward: number;
+    gameInfoError: boolean;
 };
 
 export type ContractActions = {
@@ -67,6 +68,7 @@ export const useContractStore = create<ContractStore>(
             lastGuessCoords: null,
             previousContractAddresses: [],
             lastReward: 0,
+            gameInfoError: false,
 
             submitGuess: async (x: number, y: number) => {
                 const addNewMessage = useMessageStore.getState().addNewMessage;

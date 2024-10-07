@@ -240,7 +240,7 @@ contract BattleshipGameTestnet {
         return rewardToken.balanceOf(address(this));
     }
 
-    function gameInfo() public returns(bool, uint8, uint8) {
+    function gameInfo() public view returns(bool, uint8, uint8) {
         return (gameOver, gridSize, totalShips);
     }
 }
