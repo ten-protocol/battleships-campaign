@@ -32,7 +32,7 @@ export default function Graveyard() {
             )}
 
             <p className="text-3xl mt-5 whitespace-nowrap font-bold">
-                {unknownState ? '???' : graveyard}/{unknownState ? '???' : totalShips}
+                {unknownState ? '???' : totalShips - graveyard}/{unknownState ? '???' : totalShips}
             </p>
             <h3 className="text-sm whitespace-nowrap">Ships remaining</h3>
         </div>
