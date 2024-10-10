@@ -28,9 +28,7 @@ contract BattleshipGameTestnet {
     bool public gameOver;
     uint8 public immutable gridSize;
     uint8 public immutable totalShips;
-
-    uint256[] public cellStatesBitmap;
-
+    uint256[] private cellStatesBitmap;
     mapping(address => uint16) private playerHits;
     mapping(address => uint16) private playerSinks;
     address private lastSunkShipPlayer;
@@ -104,12 +102,7 @@ contract BattleshipGameTestnet {
         }
     }
 
-    function isPositionUniqueAndFits(
-        uint8 x,
-        uint8 y,
-        uint8 length,
-        bool isHorizontal
-    ) private view returns (bool) {
+    function isPositionUniqueAndFits(uint8 x, uint8 y, uint8 length, bool isHorizontal) private view returns (bool) {
         if (isHorizontal) {
             if (x + length > gridSize) return false;
         } else {
@@ -217,7 +210,7 @@ contract BattleshipGameTestnet {
         );
     }
 
-    function getCellState(uint16 cellIndex) internal view returns (uint8) {
+    function getCellState(uint16 cellIndex) private view returns (uint8) {
         uint256 wordIndex = cellIndex / 128;
         uint256 bitIndex = (cellIndex % 128) * 2;
 
@@ -236,7 +229,7 @@ contract BattleshipGameTestnet {
         }
     }
 
-    function setCellState(uint16 cellIndex, uint8 state) internal {
+    function setCellState(uint16 cellIndex, uint8 state) private {
         uint256 wordIndex = cellIndex / 128;
         uint256 bitIndex = (cellIndex % 128) * 2;
 
@@ -255,11 +248,7 @@ contract BattleshipGameTestnet {
         }
     }
 
-    function getPersonalStats()
-    public
-    view
-    returns (uint16 personalHits, uint16 personalSinks)
-    {
+    function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
         personalHits = playerHits[msg.sender];
         personalSinks = playerSinks[msg.sender];
     }
