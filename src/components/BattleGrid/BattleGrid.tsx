@@ -43,7 +43,7 @@ export default function BattleGrid() {
             gameInit(...gameInfo);
             setDisplayGrid(true);
         }
-    }, [isSuccess, isError, isSuccess]);
+    }, [isSuccess, isError]);
 
     const animation = {
         initial: { opacity: 0 },

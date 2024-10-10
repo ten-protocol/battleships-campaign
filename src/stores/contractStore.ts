@@ -3,6 +3,7 @@ import { WriteContractErrorType } from 'viem';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import decodeGameState from '@/lib/decodeGameState';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import placeHit from '@/lib/placeHit';
 import { trackEvent } from '@/lib/trackEvent';
@@ -13,8 +14,8 @@ import { useWalletStore } from '@/stores/walletStore';
 import { useGameStore } from './gameStore';
 
 export type ContractState = {
-    hits: number[];
-    misses: number[];
+    hits: [number, number][];
+    misses: [number, number][];
     graveyard: null | number;
     gameOver: boolean;
     gridSize: number;
@@ -31,8 +32,8 @@ export type ContractActions = {
     submitGuess: (x: number, y: number) => Promise<void>;
     resetGuessState: () => void;
     setPrizePool: (prizePool: string) => void;
-    setHits: (hits: number[]) => void;
-    setMisses: (misses: number[]) => void;
+    setHits: (hits: [number, number][]) => void;
+    setMisses: (misses: [number, number][]) => void;
     setGraveyard: (graveyard: number) => void;
     setLastGuessCoords: (guessedCoords: number[]) => void;
     gameInit: (gameOver: boolean, gridSize: number, totalShips: number) => void;
@@ -98,17 +99,17 @@ export const useContractStore = create<ContractStore>(
                     const hitFeedbackLog = logs[lastPlay ? 1 : 0];
 
                     const {
-                        allHits,
-                        allMisses,
+                        gameState,
                         sunkShipsCount,
                         success,
                         sunk,
-                        guessedCoords,
                         zenTransferred,
                         uniqueStrike,
                         //TODO: Revisit this type
                         //@ts-ignore
                     } = hitFeedbackLog.args;
+
+                    const { hits, misses } = decodeGameState(gameState, get().gridSize);
 
                     addPlayToGameContract(
                         import.meta.env.VITE_CONTRACT_ADDRESS,
@@ -140,12 +141,12 @@ export const useContractStore = create<ContractStore>(
                         );
                     }
 
-                    get().setHits(allHits);
-                    get().setMisses(allMisses);
+                    get().setHits(hits);
+                    get().setMisses(misses);
                     get().setGraveyard(sunkShipsCount);
                     set({ guessState });
                     set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
-                    get().setLastGuessCoords(guessedCoords);
+                    get().setLastGuessCoords([x, y]);
                 } catch (error) {
                     console.error(error);
                     const e = error as WriteContractErrorType;
@@ -181,7 +182,7 @@ export const useContractStore = create<ContractStore>(
                 addNewMessage('Graveyard info updated.');
             },
 
-            setMisses: (latestMisses: number[]) => {
+            setMisses: (latestMisses: [number, number][]) => {
                 const currentMisses = get().misses;
                 const missesHaveUpdated = latestMisses.length !== currentMisses.length;
 
@@ -192,7 +193,7 @@ export const useContractStore = create<ContractStore>(
             },
 
             //TODO: Given the similarity of the methods here might be worth combining with the above.
-            setHits: (latestHits: number[]) => {
+            setHits: (latestHits: [number, number][]) => {
                 const currentHits = get().hits;
                 const hitsHaveUpdated = latestHits.length !== currentHits.length;
 
