@@ -15,10 +15,14 @@ type Props = {
 };
 
 export default function BattleGridControls({ width = 0, height = 0, children }: Props) {
-    const [setHoveredCell, selectCell] = useGameStore((state) => [
-        state.setHoveredCell,
-        state.selectCell,
-    ]);
+    const [setHoveredCell, selectCell, helpWindowOpen, leaderboardWindowOpen] = useGameStore(
+        (state) => [
+            state.setHoveredCell,
+            state.selectCell,
+            state.helpWindowOpen,
+            state.leaderboardWindowOpen,
+        ]
+    );
     const [guessState, gridSize] = useContractStore((state) => [state.guessState, state.gridSize]);
     const containerRef = useRef<PIXI.Container<PIXI.DisplayObject>>(null);
     const mousePositionRef = useRef({ x: 0, y: 0 });
@@ -32,7 +36,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
 
     const gridWidth = HEX_WIDTH * gridSize + HEX_GRID_MARGIN * 1.5;
     const gridHeight = HEX_HEIGHT * gridSize * 0.75 + HEX_GRID_MARGIN;
-    const isIdle = guessState === 'IDLE';
+    const isMovable = guessState === 'IDLE' && !leaderboardWindowOpen && !helpWindowOpen;
     const [{ x, y }, api] = useSpring(() => ({
         x: 0,
         y: 0,
@@ -40,7 +44,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
     }));
     canvasSizeRef.current = { width, height };
 
-    if (!isIdle) {
+    if (!isMovable) {
         mousePositionRef.current = { x: -1, y: -1 };
     }
 
@@ -181,7 +185,7 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
             ref={containerRef}
             x={x}
             y={y}
-            eventMode={isIdle ? 'dynamic' : 'none'}
+            eventMode={isMovable ? 'dynamic' : 'none'}
             tap={onTap}
             touchstart={onDragStart}
             touchend={onDragEnd}

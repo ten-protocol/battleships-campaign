@@ -13,6 +13,8 @@ import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
 import SocialShare from '@/components/SocialShare/SocialShare';
+import ZenLeaderboard from '@/components/ZenLeaderboard/ZenLeaderboard';
+import ZenLeaderboardWindow from '@/components/ZenLeaderboard/ZenLeaderboardWindow';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
@@ -66,16 +68,17 @@ function App() {
             <PageHeader />
             <SocialShare />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
-                <div className="order-2 lg:order-1">
+                <div className="flex flex-col order-2 gap-6 lg:order-1">
                     <Graveyard />
+                    <CellsRemaining />
                 </div>
                 <div className="overflow-hidden order-1 md:col-span-2 lg:order-2 lg:col-span-1">
                     <BattleGrid />
                 </div>
                 <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
                     <MetaMask />
+                    <ZenLeaderboard />
                     <GameStats />
-                    <CellsRemaining />
                 </div>
                 <div className="md:col-span-3 order-4">
                     <MessageLog />
@@ -84,6 +87,7 @@ function App() {
             <ProcessingNotification />
             <FreePlayWindow />
             <HelpWindow />
+            <ZenLeaderboardWindow />
         </div>
     );
 }

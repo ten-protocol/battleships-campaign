@@ -26,6 +26,7 @@ export type GameState = {
     selectedCell: Cell | null;
     freePlayWindowOpen: boolean;
     helpWindowOpen: boolean;
+    leaderboardWindowOpen: boolean;
 };
 
 export type GameActions = {
@@ -36,6 +37,7 @@ export type GameActions = {
     setScrollPosition: (x: number, y: number) => void;
     toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
+    toggleLeaderboardWindow: () => void;
 };
 
 export type GameStore = GameState & GameActions;
@@ -51,6 +53,7 @@ export const useGameStore = create<GameStore>(
             selectedCell: null,
             freePlayWindowOpen: false,
             helpWindowOpen: true,
+            leaderboardWindowOpen: false,
 
             initGrid: (width: number, height: number) =>
                 set(() => {
@@ -118,6 +121,8 @@ export const useGameStore = create<GameStore>(
                 set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
 
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
+            toggleLeaderboardWindow: () =>
+                set((state) => ({ leaderboardWindowOpen: !state.leaderboardWindowOpen })),
         }),
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,
