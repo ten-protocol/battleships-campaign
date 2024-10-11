@@ -19,6 +19,7 @@ PRIVATE_KEY=<KEY>
 VITE_CONTRACT_ADDRESS=<CONTRACT ADDRESS>
 VITE_ZEN_CONTRACT_ADDRESS=<ZEN CONTRACT ADDRESS>
 VITE_ZEN_API=https://faucet.ten.xyz
+
 ```
 
 -   Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
