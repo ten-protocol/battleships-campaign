@@ -7,7 +7,7 @@ import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
 
-import { FeedbackCoords, useContractStore } from './contractStore';
+import { useContractStore } from './contractStore';
 
 export type Cell = {
     row: number;
@@ -26,16 +26,18 @@ export type GameState = {
     selectedCell: Cell | null;
     freePlayWindowOpen: boolean;
     helpWindowOpen: boolean;
+    leaderboardWindowOpen: boolean;
 };
 
 export type GameActions = {
     initGrid: (height: number, width: number) => void;
     setHoveredCell: (x: number, y: number) => void;
     selectCell: () => void;
-    setRevealedCells: (cells: FeedbackCoords[], type: RevealedCellType) => void;
+    setRevealedCells: (cells: number[][], type: RevealedCellType) => void;
     setScrollPosition: (x: number, y: number) => void;
     toggleFreePlayWindow: () => void;
     toggleHelpWindow: () => void;
+    toggleLeaderboardWindow: () => void;
 };
 
 export type GameStore = GameState & GameActions;
@@ -51,6 +53,7 @@ export const useGameStore = create<GameStore>(
             selectedCell: null,
             freePlayWindowOpen: false,
             helpWindowOpen: true,
+            leaderboardWindowOpen: false,
 
             initGrid: (width: number, height: number) =>
                 set(() => {
@@ -71,8 +74,15 @@ export const useGameStore = create<GameStore>(
 
                     if (guessState !== 'IDLE') return {};
                     const [sx, sy] = getSnappedMousePosition(x, y);
-                    const [col, row] = getCellCoordsFromXY(sx, sy);
-                    const hoveredCell = state.grid[getIndexFromCoords(col, row)];
+                    const [col, row] = getCellCoordsFromXY(
+                        sx,
+                        sy,
+                        useContractStore.getState().gridSize
+                    );
+                    const hoveredCell =
+                        state.grid[
+                            getIndexFromCoords(col, row, useContractStore.getState().gridSize)
+                        ];
                     const isRevealed = !!state.revealedCells[`${col}_${row}`];
 
                     if (!hoveredCell || isRevealed) return {};
@@ -91,11 +101,12 @@ export const useGameStore = create<GameStore>(
                 submitGuess(selectedCell.col, selectedCell.row);
             },
 
-            setRevealedCells: (cells: FeedbackCoords[], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
+            setRevealedCells: (cells: number[][], type: 'HIT' | 'MISS' | 'UNKNOWN') => {
                 set(
                     produce((state) => {
                         for (let i = 0; i < cells.length; i++) {
-                            const key = `${cells[i].x}_${cells[i].y}`;
+                            const [x, y] = cells[i];
+                            const key = `${x}_${y}`;
                             state.revealedCells[key] = type;
                         }
                     })
@@ -110,6 +121,8 @@ export const useGameStore = create<GameStore>(
                 set((state) => ({ freePlayWindowOpen: !state.freePlayWindowOpen })),
 
             toggleHelpWindow: () => set((state) => ({ helpWindowOpen: !state.helpWindowOpen })),
+            toggleLeaderboardWindow: () =>
+                set((state) => ({ leaderboardWindowOpen: !state.leaderboardWindowOpen })),
         }),
         {
             name: `${import.meta.env.VITE_CONTRACT_ADDRESS}-battle-grid-storage`,

@@ -77,7 +77,7 @@ export default function HudWindow({
     };
 
     const modalClass = classNames({
-        'absolute inset-0 flex justify-center items-center': modalMode,
+        'fixed inset-0 flex justify-center items-center': modalMode,
         'bg-translucentBg': !transparentOverlay,
     });
 

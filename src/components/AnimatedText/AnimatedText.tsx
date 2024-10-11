@@ -15,7 +15,7 @@ type Props = {
 export default function AnimatedText({
     text,
     delay = 0,
-    speed = 0.05,
+    speed = 0.02,
     classes,
     onComplete,
 }: Props) {

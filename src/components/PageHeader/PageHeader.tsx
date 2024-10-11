@@ -22,7 +22,7 @@ export default function PageHeader() {
             wallet_address: useWalletStore.getState().address,
             wallet_types: getWalletUserWallets(),
         });
-    };    
+    };
 
     const trackFaucetEvent = () => {
         trackEvent('ten_faucet', {

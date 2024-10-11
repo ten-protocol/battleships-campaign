@@ -4,9 +4,6 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract BattleshipGameTestnet {
-    uint8 constant gridSize = 100;
-    uint8 constant totalShips = 249;
-    uint8 constant shipLength = 3;
     uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
     uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
     uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
@@ -18,64 +15,103 @@ contract BattleshipGameTestnet {
 
     struct Ship {
         Position start;
-        bool[shipLength] hits;
+        uint8 length;
+        bool isHorizontal;
+        uint256 hitsBitmap;
     }
 
-    Ship[totalShips] private ships;
+    Ship[] public ships;
     mapping(uint16 => uint8) private positionToShipIndex;
-    mapping(uint16 => bool) private hits;
-    mapping(uint16 => bool) private misses;
     uint256 private seed;
     uint256 private nonce = 0;
-    bool[totalShips] private graveyard;
     uint8 private sunkShipsCount;
     bool public gameOver;
-    Position[] private allHits;
-    Position[] private allMisses;
-
+    uint8 public immutable gridSize;
+    uint8 public immutable totalShips;
+    uint256[] private cellStatesBitmap;
     mapping(address => uint16) private playerHits;
     mapping(address => uint16) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
-    uint256 public totalZENAllocated; // Track total ZEN tokens allocated
+    uint256 public totalZENAllocated;
 
     IERC20 public rewardToken;
 
     event GameOver(address winner, uint256 totalZENAllocated);
-    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 totalZENAllocated, uint256 zenTransferred, bool uniqueStrike);
+    event HitFeedback(
+        address indexed user,
+        uint8 x,
+        uint8 y,
+        bool success,
+        bool sunk,
+        uint8 sunkShipsCount,
+        uint256 totalZENAllocated,
+        uint256 zenTransferred,
+        uint256[] gameState,
+        bool uniqueStrike
+    );
 
-    constructor(address tokenAddress) {
+    constructor(address tokenAddress, uint8 _gridSize, uint8 _totalShips) {
         rewardToken = IERC20(tokenAddress);
-        seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
+        gridSize = _gridSize;
+        totalShips = _totalShips;
+        seed = uint256(
+            keccak256(
+                abi.encodePacked(block.difficulty, block.timestamp, msg.sender)
+            )
+        );
+        uint256 bitmapSize = ((uint256(gridSize) * uint256(gridSize) * 2) + 255) / 256;
+        cellStatesBitmap = new uint256[](bitmapSize);
         generatePositions();
     }
 
     function generatePositions() private {
-        uint8 index = 0;
-        while (index < totalShips) {
+        while (ships.length < totalShips) {
             uint256 hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
-            for (uint8 i = 0; i < 36 && index < totalShips; i++) {
-                uint8 x = uint8(hash & 0x7F) % gridSize;
-                uint8 y = uint8((hash >> 7) & 0x7F) % gridSize;
+            for (uint8 i = 0; i < 36 && ships.length < totalShips; i++) {
+                uint8 x = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 y = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 length = (uint8(hash & 0x03)) + 2;
+                hash >>= 2;
+                bool isHorizontal = (hash & 0x01) == 1;
+                hash >>= 1;
 
-                if (isPositionUniqueAndFits(x, y)) {
-                    ships[index].start = Position(x, y);
-                    for (uint8 j = 0; j < shipLength; j++) {
-                        uint16 positionKey = packCoordinates(x + j, y);
+                if (isPositionUniqueAndFits(x, y, length, isHorizontal)) {
+                    ships.push(Ship({
+                        start: Position(x, y),
+                        length: length,
+                        isHorizontal: isHorizontal,
+                        hitsBitmap: 0
+                    }));
+                    uint8 index = uint8(ships.length - 1);
+                    for (uint8 j = 0; j < length; j++) {
+                        uint8 posX = x + (isHorizontal ? j : 0);
+                        uint8 posY = y + (isHorizontal ? 0 : j);
+                        uint16 positionKey = packCoordinates(posX, posY);
                         positionToShipIndex[positionKey] = index + 1;
                     }
-                    index++;
                 }
-                hash >>= 14;
+                if (hash < 0xFF) {
+                    nonce++;
+                    hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
+                }
             }
             nonce++;
         }
     }
 
-    function isPositionUniqueAndFits(uint8 x, uint8 y) private view returns (bool) {
-        if (x + shipLength > gridSize) return false;
-        for (uint8 j = 0; j < shipLength; j++) {
-            uint16 positionKey = packCoordinates(x + j, y);
+    function isPositionUniqueAndFits(uint8 x, uint8 y, uint8 length, bool isHorizontal) private view returns (bool) {
+        if (isHorizontal) {
+            if (x + length > gridSize) return false;
+        } else {
+            if (y + length > gridSize) return false;
+        }
+        for (uint8 j = 0; j < length; j++) {
+            uint8 posX = x + (isHorizontal ? j : 0);
+            uint8 posY = y + (isHorizontal ? 0 : j);
+            uint16 positionKey = packCoordinates(posX, posY);
             if (positionToShipIndex[positionKey] != 0) {
                 return false;
             }
@@ -88,47 +124,55 @@ contract BattleshipGameTestnet {
     }
 
     function hit(uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.00443 ether, 'Incorrect fee amount');
-        uint16 positionKey = packCoordinates(x, y);
+        require(!gameOver, "Game is over");
+        require(msg.value == 0.00443 ether, "Incorrect fee");
+        uint16 cellIndex = uint16(y) * uint16(gridSize) + uint16(x);
+        require(cellIndex < uint16(gridSize) * uint16(gridSize), "Invalid coordinates");
 
-        if (hits[positionKey]) {
+        uint8 cellState = getCellState(cellIndex);
+
+        if (cellState != 0) {
             payable(msg.sender).transfer(msg.value);
-            emit HitFeedback(msg.sender, [x, y], false, false, allHits, allMisses, graveyard, totalZENAllocated, 0, false);
-        } else {
-            _processHit(msg.sender, x, y);
+            emit HitFeedback(
+                msg.sender,
+                x,
+                y,
+                false,
+                false,
+                sunkShipsCount,
+                totalZENAllocated,
+                0,
+                cellStatesBitmap,
+                false
+            );
+            return;
         }
+
+        _processHit(msg.sender, x, y, cellIndex);
     }
 
-    function _processHit(address player, uint8 x, uint8 y) private {
-        uint16 positionKey = packCoordinates(x, y);
+    function _processHit(address player, uint8 x, uint8 y, uint16 cellIndex) private {
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
 
-        hits[positionKey] = true;
         totalHits++;
         playerHits[player]++;
 
+        uint16 positionKey = packCoordinates(x, y);
         uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
             shipIndex--;
             success = true;
             Ship storage ship = ships[shipIndex];
-            uint8 hitIndex = x - ship.start.x;
-            ship.hits[hitIndex] = true;
-            allHits.push(Position(x, y));
+            uint8 hitIndex = ship.isHorizontal ? (x - ship.start.x) : (y - ship.start.y);
 
-            bool allHit = true;
-            for (uint8 i = 0; i < shipLength; i++) {
-                if (!ship.hits[i]) {
-                    allHit = false;
-                    break;
-                }
-            }
-            if (allHit) {
+            ship.hitsBitmap |= uint256(1) << hitIndex;
+
+            setCellState(cellIndex, 2);
+
+            if (ship.hitsBitmap == (uint256(1) << ship.length) - 1) {
                 sunk = true;
-                graveyard[shipIndex] = true;
                 sunkShipsCount++;
                 playerSinks[player]++;
                 if (sunkShipsCount == totalShips) {
@@ -144,25 +188,76 @@ contract BattleshipGameTestnet {
             }
         } else {
             success = false;
-            misses[positionKey] = true;
-            allMisses.push(Position(x, y));
+            setCellState(cellIndex, 1);
         }
 
         if (zenTransferred > 0) {
-            require(rewardToken.transfer(player, zenTransferred), "Token transfer failed");
+            rewardToken.transfer(player, zenTransferred);
             totalZENAllocated += zenTransferred;
         }
 
-        emit HitFeedback(player, [x, y], success, sunk, allHits, allMisses, graveyard, totalZENAllocated, zenTransferred, true);
+        emit HitFeedback(
+            player,
+            x,
+            y,
+            success,
+            sunk,
+            sunkShipsCount,
+            totalZENAllocated,
+            zenTransferred,
+            cellStatesBitmap,
+            true
+        );
+    }
+
+    function getCellState(uint16 cellIndex) private view returns (uint8) {
+        uint256 wordIndex = cellIndex / 128;
+        uint256 bitIndex = (cellIndex % 128) * 2;
+
+        if (bitIndex <= 254) {
+            uint256 value = (cellStatesBitmap[wordIndex] >> bitIndex) & 0x03;
+            return uint8(value);
+        } else {
+            uint256 lowerBits = 256 - bitIndex;
+            uint256 upperBits = 2 - lowerBits;
+
+            uint256 lowerPart = (cellStatesBitmap[wordIndex] >> bitIndex) & ((1 << lowerBits) - 1);
+            uint256 upperPart = (cellStatesBitmap[wordIndex + 1]) & ((1 << upperBits) - 1);
+
+            uint256 value = (upperPart << lowerBits) | lowerPart;
+            return uint8(value);
+        }
+    }
+
+    function setCellState(uint16 cellIndex, uint8 state) private {
+        uint256 wordIndex = cellIndex / 128;
+        uint256 bitIndex = (cellIndex % 128) * 2;
+
+        if (bitIndex <= 254) {
+            uint256 mask = uint256(0x03) << bitIndex;
+            cellStatesBitmap[wordIndex] = (cellStatesBitmap[wordIndex] & ~mask) | (uint256(state) << bitIndex);
+        } else {
+            uint256 lowerBits = 256 - bitIndex;
+            uint256 upperBits = 2 - lowerBits;
+
+            uint256 lowerMask = ((1 << lowerBits) - 1) << bitIndex;
+            uint256 upperMask = (1 << upperBits) - 1;
+
+            cellStatesBitmap[wordIndex] = (cellStatesBitmap[wordIndex] & ~lowerMask) | ((state & ((1 << lowerBits) - 1)) << bitIndex);
+            cellStatesBitmap[wordIndex + 1] = (cellStatesBitmap[wordIndex + 1] & ~upperMask) | (state >> lowerBits);
+        }
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
         personalHits = playerHits[msg.sender];
         personalSinks = playerSinks[msg.sender];
-        return (personalHits, personalSinks);
     }
 
     function getZenTokenBalance() public view returns (uint256) {
         return rewardToken.balanceOf(address(this));
+    }
+
+    function gameInfo() public view returns (bool, uint8, uint8) {
+        return (gameOver, gridSize, totalShips);
     }
 }

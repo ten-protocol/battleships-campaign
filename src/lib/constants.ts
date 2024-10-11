@@ -4,14 +4,12 @@ export const HEX_HEIGHT = 32;
 export const VERTICAL_OFFSET = 8;
 export const HORIZONTAL_OFFSET = 0;
 export const GRID_CONTAINER_HEIGHT = 500;
-export const COLS = 100;
-export const ROWS = 100;
 export const HEX_GRID_MARGIN = 32;
-export const SHIP_SIZE = 3;
 export const TEN_CHAIN_ID = 443; //'0x1bb';
 export const FAUCET_URL = 'https://faucet.ten.xyz/';
 export const GATEWAY_URL = 'https://testnet.ten.xyz/';
-export const TPOINTS_INFO_URL = 'https://ten-protocol.notion.site/t-points-System-49c994fac5b0415fa3ad75452e0f7db3';
+export const TPOINTS_INFO_URL =
+    'https://ten-protocol.notion.site/t-points-System-49c994fac5b0415fa3ad75452e0f7db3';
 export const PLAY_TOKEN_SYMBOL = 'ZEN';
 export const HIT_REWARD = 1;
 export const SINK_REWARD = 3;

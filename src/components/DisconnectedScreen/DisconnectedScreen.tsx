@@ -2,9 +2,13 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 
 import AnimatedText from '@/components/AnimatedText/AnimatedText';
-import { TEN_CHAIN_ID } from '@/lib/constants';
+import { GATEWAY_URL, TEN_CHAIN_ID } from '@/lib/constants';
 
-export default function DisconnectedScreen() {
+type Props = {
+    contractError: boolean;
+};
+
+export default function DisconnectedScreen({ contractError }: Props) {
     const { address, chainId } = useAccount();
 
     return (
@@ -18,13 +22,29 @@ export default function DisconnectedScreen() {
                     </p>
                 )}
 
+                {contractError && (
+                    <div className="flex flex-col justify-center p-2 bg-red-900 mb-2">
+                        <p className="text-md">
+                            Error fetching game info from contract. Please visit{' '}
+                            <a
+                                href={GATEWAY_URL}
+                                target="_blank"
+                                className="underline hover:underline"
+                            >
+                                the testnet
+                            </a>{' '}
+                            and reconnect.
+                        </p>
+                    </div>
+                )}
+
                 <div className="flex flex-col justify-center border-l-stone-50 border p-4">
                     <p>Your wallet needs to have already been registered with TEN chain.</p>
                     <p className="mb-4">
                         Register it here at{' '}
                         <a
                             className="text-accent underline"
-                            href="HTTPS://TESTNET.TEN.XYZ"
+                            href={GATEWAY_URL}
                             rel="noopener"
                             target="_blank"
                         >

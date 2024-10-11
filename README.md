@@ -10,6 +10,7 @@ Create an .env file in the root of the application directory
 touch .env.development
 ```
 
+
 Add the following env vars....
 
 ```
@@ -17,6 +18,7 @@ USER_KEY=<KEY>
 PRIVATE_KEY=<KEY>
 VITE_CONTRACT_ADDRESS=<CONTRACT ADDRESS>
 VITE_ZEN_CONTRACT_ADDRESS=<ZEN CONTRACT ADDRESS>
+VITE_ZEN_API=https://faucet.ten.xyz
 ```
 
 -   Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
