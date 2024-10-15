@@ -11,4 +11,6 @@ export type ZenLeaderboardResponse = {
     top10: ZenLeaderboard;
 };
 
-export type ZenLeaderboardWalletPositionResponse = ZenLeaderboardItem;
+export type ZenLeaderboardWalletPositionResponse = ZenLeaderboardItem & {
+    prize: string;
+};
