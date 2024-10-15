@@ -163,15 +163,35 @@ export default function ZenLeaderboardWindow() {
                                 </tr>
                                 <tr className="pb-4">
                                     <td className="whitespace-nowrap pr-4 font-bold align-top">
-                                        $5,000 USDT
+                                        $100 USDT
                                     </td>
-                                    <td className="text-xs">
-                                        split among the next 15 and random players.
+                                    <td className="text-xs">4th-53rd</td>
+                                </tr>
+                                <tr className="pb-4">
+                                    <td className="whitespace-nowrap pr-4 font-bold align-top">
+                                        100 T-Points
                                     </td>
+                                    <td className="text-xs">54th-103rd</td>
+                                </tr>
+                                <tr className="pb-4">
+                                    <td className="whitespace-nowrap pr-4 font-bold align-top">
+                                        50 T-Points
+                                    </td>
+                                    <td className="text-xs">104th-353rd</td>
+                                </tr>
+                                <tr className="pb-4">
+                                    <td className="whitespace-nowrap pr-4 font-bold align-top">
+                                        25 T-Points
+                                    </td>
+                                    <td className="text-xs">354th-1353rd</td>
                                 </tr>
                             </tbody>
                         </table>
-                        <p>Lots of T-points available too!</p>
+                        <p className="bg-white text-black p-2 text-sm">
+                            If you hold your current position ({walletLeaderboardPosition?.position}
+                            ) at the end of the game you&#39;ll have won{' '}
+                            <strong>{walletLeaderboardPosition?.prize}</strong>!
+                        </p>
                     </div>
                 </div>
             </div>
