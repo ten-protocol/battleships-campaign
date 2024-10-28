@@ -6,7 +6,7 @@ require('@nomicfoundation/hardhat-toolbox')
 const { PRIVATE_KEY, USER_KEY } = process.env
 
 task('deploy', 'Deploys the BattleshipGame contract').setAction(async (taskArgs, hre) => {
-  const BattleshipGame = await hre.ethers.getContractFactory('BattleshipGame')
+  const BattleshipGame = await hre.ethers.getContractFactory('BattleshipGameTestnet')
   const battleshipGame = await BattleshipGame.deploy()
   await battleshipGame.deployed()
 
