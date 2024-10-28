@@ -25,6 +25,7 @@ export default function BattleGrid() {
     const {
         data: gameInfo,
         isError,
+        error,
         isSuccess,
     } = useReadContract({
         abi: BattleshipGameJson.abi,
@@ -35,6 +36,10 @@ export default function BattleGrid() {
             retry: false,
         },
     });
+
+    if (isError) {
+        console.error(`Error fetching game info: ${error.message}`);
+    }
 
     useEffect(() => {
         if (isSuccess && gameInfo && !displayGrid) {
