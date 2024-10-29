@@ -11,7 +11,6 @@ export default function placeHit(x: number, y: number): Promise<{ logs: Log[]; t
             abi: BattleshipGameJson.abi,
             address: import.meta.env.VITE_CONTRACT_ADDRESS,
             functionName: 'hit',
-            gas: BigInt(2000000),
             args: [x, y],
             value: parseEther(MOVE_FEE),
         })
