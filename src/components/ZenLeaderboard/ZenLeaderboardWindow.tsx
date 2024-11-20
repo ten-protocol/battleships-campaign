@@ -19,6 +19,8 @@ export default function ZenLeaderboardWindow() {
     const { address, isConnected, chainId } = useAccount();
     const ready = address && isConnected && chainId === TEN_CHAIN_ID;
 
+    const finalizingResults = true;
+
     const {
         data: leaderboardData,
         isPending: leaderboardPending,
@@ -55,7 +57,23 @@ export default function ZenLeaderboardWindow() {
                 </div>
             }
         >
-            <div className="max-w-2xl px-6 py-2">
+            {finalizingResults && (
+                <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center z-50 pointer-events-none">
+                    <div className="text-white text-center">
+                        <p className="text-2xl font-bold mb-4 drop-shadow-lg">Finalizing Results...</p>
+                        <p className="text-lg mb-4 drop-shadow-lg">Please check back shortly. <br/>  In the meantime, you can have fun playing!</p>
+                        <a
+                            href="https://x.com/tenprotocol/status/1858587677534417035"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-300 underline hover:text-blue-500 drop-shadow-lg"
+                        >
+                            Read more here
+                        </a>
+                    </div>
+                </div>
+            )}
+            <div className={`max-w-2xl px-6 py-2 ${finalizingResults ? 'blur-sm' : ''}`}>
                 <div className="flex flex-col gap-6 lg:flex-row">
                     <div>
                         <h4 className="text-xl">Top 10 ZEN Wallets</h4>
