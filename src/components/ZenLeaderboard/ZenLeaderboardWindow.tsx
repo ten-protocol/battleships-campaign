@@ -213,12 +213,16 @@ export default function ZenLeaderboardWindow() {
                             }`}
                         >
                             {walletLeaderboardPosition?.isFlagged ? (
-                                <>Your account has been flagged!</>
+                                <>🤖 Your account has been flagged!</>
                             ) : (
                                 <>
-                                    Congratulations, you finished the competition in
-                                    {` ${walletLeaderboardPosition?.position}th place`} and won <strong>{walletLeaderboardPosition?.prize}</strong>!
-                                    <br/><br/>We will distribute the prizes very soon, stay tuned to Discord for updates!
+                                Congratulations🎉! You finished the competition in
+                                {` ${walletLeaderboardPosition?.position}th place`} and won <strong>{walletLeaderboardPosition?.prize}</strong>!
+                                <br /><br />
+                                We will distribute the prizes very soon, stay tuned to Discord for announcements and join us on {" "}
+                                    <a href="https://app.dework.xyz/i/6gWRQxDnKA0bLsUUxJnoJ3" target="_blank" rel="noopener noreferrer" className="text-black-500 underline font-bold">
+                                        DeWork!
+                                    </a>
                                 </>
                             )}
                         </p>
