@@ -19,7 +19,7 @@ export default function ZenLeaderboardWindow() {
     const { address, isConnected, chainId } = useAccount();
     const ready = address && isConnected && chainId === TEN_CHAIN_ID;
 
-    const finalizingResults = true;
+    const finalizingResults = false;
 
     const {
         data: leaderboardData,
@@ -132,7 +132,7 @@ export default function ZenLeaderboardWindow() {
                                             colSpan={3}
                                             className="text-center p-2 bg-white text-black"
                                         >
-                                            Cannot find your wallet balance. Check back in 24hrs.
+                                            Cannot find your wallet balance.
                                         </td>
                                     </tr>
                                 )}
@@ -205,11 +205,24 @@ export default function ZenLeaderboardWindow() {
                                 </tr>
                             </tbody>
                         </table>
-                        <p className="bg-white text-black p-2 text-sm">
-                            If you hold your current position ({walletLeaderboardPosition?.position}
-                            ) at the end of the game you&#39;ll have won{' '}
-                            <strong>{walletLeaderboardPosition?.prize}</strong>!
+                        {/*@ts-ignore*/}
+                        {!walletLeaderboardError?.response?.data?.error && (
+                        <p
+                            className={`p-2 text-sm text-black ${
+                                walletLeaderboardPosition?.isFlagged ? 'bg-red-600' : 'bg-green-600'
+                            }`}
+                        >
+                            {walletLeaderboardPosition?.isFlagged ? (
+                                <>Your account has been flagged!</>
+                            ) : (
+                                <>
+                                    Congratulations, you finished the competition in
+                                    {` ${walletLeaderboardPosition?.position}th place`} and won <strong>{walletLeaderboardPosition?.prize}</strong>!
+                                    <br/><br/>We will distribute the prizes very soon, stay tuned to Discord for updates!
+                                </>
+                            )}
                         </p>
+                    )}
                     </div>
                 </div>
             </div>
