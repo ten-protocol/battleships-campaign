@@ -1,5 +1,6 @@
 export type ZenLeaderboardItem = {
     position: number;
+    isFlagged: boolean;
     walletAddress: string;
     balance: number;
 };
