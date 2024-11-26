@@ -206,7 +206,7 @@ export default function ZenLeaderboardWindow() {
                             </tbody>
                         </table>
                         {/*@ts-ignore*/}
-                        {!walletLeaderboardError?.response?.data?.error && (
+                        {isConnected && !walletLeaderboardError?.response?.data?.error && (
                         <p
                             className={`p-2 text-sm text-black ${
                                 walletLeaderboardPosition?.isFlagged ? 'bg-red-600' : 'bg-green-600'
