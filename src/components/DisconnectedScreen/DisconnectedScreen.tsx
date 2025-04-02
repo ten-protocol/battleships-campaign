@@ -31,7 +31,7 @@ export default function DisconnectedScreen({ contractError }: Props) {
                                 target="_blank"
                                 className="underline hover:underline"
                             >
-                                the testnet
+                                the gateway
                             </a>{' '}
                             and reconnect.
                         </p>
@@ -48,7 +48,7 @@ export default function DisconnectedScreen({ contractError }: Props) {
                             rel="noopener"
                             target="_blank"
                         >
-                            HTTPS://TESTNET.TEN.XYZ
+                            HTTPS://GATEWAY.TEN.XYZ
                         </a>{' '}
                         and then Connect.
                     </p>
