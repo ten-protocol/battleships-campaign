@@ -1,4 +1,8 @@
 # Battleship Game
+On-chain game heavily inspired by the classic board game Battleships. Players are presented with a grid and select squares to try to sink as many of the ships as possible.
+Each successful hit or ship sinking is rewarded with a ZEN game token.
+
+![In-game screenshot](./public/screenshot.png)
 
 ## Local environment setup
 
