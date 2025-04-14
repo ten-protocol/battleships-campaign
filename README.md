@@ -40,3 +40,4 @@ The test version of the contract requires to deploy ZEN first and push it's addr
 ### Run dev environment
 
 `npm run dev`
+
