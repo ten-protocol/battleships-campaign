@@ -1,12 +1,12 @@
 import React from 'react';
 
-import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit';
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
-import { braveWallet, metaMaskWallet, rabbyWallet } from '@rainbow-me/rainbowkit/wallets';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactDOM from 'react-dom/client';
-import { createWalletClient, custom, defineChain } from 'viem';
-import { WagmiProvider, createConfig } from 'wagmi';
+import { defineChain, fallback, http } from 'viem';
+import { WagmiProvider, createConfig, unstable_connector } from 'wagmi';
+import { injected } from 'wagmi/connectors';
 
 import Avatar from '@/components/Avatar/Avatar';
 
@@ -34,25 +34,16 @@ export const ten = defineChain({
     },
 });
 
-const connectors = connectorsForWallets(
-    [
-        {
-            groupName: 'Recommended',
-            wallets: [metaMaskWallet, braveWallet, rabbyWallet],
-        },
-    ],
-    {
-        appName: 'TEN: Battleships',
-        projectId: '443',
-    }
-);
-
 export const wagmiConfig = createConfig({
     chains: [ten],
-    client({ chain }) {
-        return createWalletClient({ chain, transport: custom(window.ethereum!) });
-    },
-    connectors,
+    connectors: [injected()],
+    transports: {
+        [ten.id]: fallback([
+            unstable_connector(injected),
+            http('https://testnet.ten.xyz/v1/')
+        ])
+    }
+
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
