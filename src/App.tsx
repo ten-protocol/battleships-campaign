@@ -13,8 +13,6 @@ import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
 import SocialShare from '@/components/SocialShare/SocialShare';
-import ZenLeaderboard from '@/components/ZenLeaderboard/ZenLeaderboard';
-import ZenLeaderboardWindow from '@/components/ZenLeaderboard/ZenLeaderboardWindow';
 import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
@@ -77,7 +75,7 @@ function App() {
                 </div>
                 <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
                     <MetaMask />
-                    <ZenLeaderboard />
+                    
                     <GameStats />
                 </div>
                 <div className="md:col-span-3 order-4">
@@ -87,7 +85,6 @@ function App() {
             <ProcessingNotification />
             <FreePlayWindow />
             <HelpWindow />
-            <ZenLeaderboardWindow />
         </div>
     );
 }
