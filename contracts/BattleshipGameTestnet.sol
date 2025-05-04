@@ -3,6 +3,11 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+// TEN callbacks interface - prevents txn analysis attack or proxy exploits
+interface TenCallbacks {
+    function register(bytes calldata) external payable returns (uint256);
+}
+
 contract BattleshipGameTestnet {
     uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
     uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
@@ -36,6 +41,7 @@ contract BattleshipGameTestnet {
     uint256 public totalZENAllocated;
 
     IERC20 public rewardToken;
+    TenCallbacks private tenCallbacks;
 
     event GameOver(address winner, uint256 totalZENAllocated);
     event HitFeedback(
@@ -51,8 +57,14 @@ contract BattleshipGameTestnet {
         bool uniqueStrike
     );
 
-    constructor(address tokenAddress, uint8 _gridSize, uint8 _totalShips) {
+    modifier onlyTenSystemCall() { 
+        require(msg.sender == address(tenCallbacks), "Only TEN system can call");
+        _;
+    }
+
+    constructor(address tokenAddress, address tenCallbacksAddress, uint8 _gridSize, uint8 _totalShips) {
         rewardToken = IERC20(tokenAddress);
+        tenCallbacks = TenCallbacks(tenCallbacksAddress);
         gridSize = _gridSize;
         totalShips = _totalShips;
         seed = uint256(
@@ -123,14 +135,15 @@ contract BattleshipGameTestnet {
         return (uint16(x) << 8) | uint16(y);
     }
 
+    // Modified hit function that registers a callback for execution at end of block
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, "Game is over");
-        require(msg.value == 0.00443 ether, "Incorrect fee");
+        require(msg.value >= 0.00443 ether, "Insufficient fee");
+
         uint16 cellIndex = uint16(y) * uint16(gridSize) + uint16(x);
         require(cellIndex < uint16(gridSize) * uint16(gridSize), "Invalid coordinates");
 
         uint8 cellState = getCellState(cellIndex);
-
         if (cellState != 0) {
             payable(msg.sender).transfer(msg.value);
             emit HitFeedback(
@@ -148,10 +161,31 @@ contract BattleshipGameTestnet {
             return;
         }
 
-        _processHit(msg.sender, x, y, cellIndex);
+        // Estimate gas needed for processing the hit
+        uint256 etherGasForHitProcessing = 100_000 * block.basefee;
+        require(msg.value >= etherGasForHitProcessing, "Insufficient gas for callback");
+
+        // Encode the function to be called by the TEN system contract
+        bytes memory callbackTargetInfo = abi.encodeWithSelector(
+            this.processHitCallback.selector, 
+            msg.sender, 
+            x, 
+            y, 
+            cellIndex,
+            msg.value - etherGasForHitProcessing
+        );
+
+        // Register the callback with the TEN system
+        tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
     }
 
-    function _processHit(address player, uint8 x, uint8 y, uint16 cellIndex) private {
+    // This function will be called by the TEN system at the end of the block
+    function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
+        // Return any excess payment to the player
+        if (refund > 0) {
+            payable(player).transfer(refund);
+        }
+
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
