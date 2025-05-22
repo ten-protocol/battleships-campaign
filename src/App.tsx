@@ -31,7 +31,6 @@ function App() {
 
     useEffect(() => {
         addNewGameContract(import.meta.env.VITE_CONTRACT_ADDRESS);
-
         const timeout = setTimeout(() => setInitialized(true), 2000);
 
         return () => clearTimeout(timeout);
