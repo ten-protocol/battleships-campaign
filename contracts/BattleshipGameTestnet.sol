@@ -162,7 +162,7 @@ contract BattleshipGameTestnet {
         }
 
         // Estimate gas needed for processing the hit
-        uint256 etherGasForHitProcessing = 100_000 * block.basefee;
+        uint256 etherGasForHitProcessing = 200_000 * block.basefee;
         require(msg.value >= etherGasForHitProcessing, "Insufficient gas for callback");
 
         // Encode the function to be called by the TEN system contract
