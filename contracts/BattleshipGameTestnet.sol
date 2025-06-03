@@ -146,7 +146,8 @@ contract BattleshipGameTestnet {
 
         uint8 cellState = getCellState(cellIndex);
         if (cellState != 0) {
-            payable(msg.sender).transfer(msg.value);
+            (bool success, ) = payable(msg.sender).call{value: msg.value}("");
+            require(success, "Transfer failed");
             emit HitFeedback(
                 msg.sender,
                 x,
@@ -243,7 +244,8 @@ contract BattleshipGameTestnet {
 
         // Return any excess payment to the player
         if (refund > 0) {
-            payable(player).transfer(refund);
+            (bool success, ) = payable(player).call{value: refund}("");
+            require(success, "Transfer failed");;
         }
     }
 
