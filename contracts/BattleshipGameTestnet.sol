@@ -184,11 +184,6 @@ contract BattleshipGameTestnet {
 
     // This function will be called by the TEN system at the end of the block
     function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
-        // Return any excess payment to the player
-        if (refund > 0) {
-            payable(player).transfer(refund);
-        }
-
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
@@ -245,6 +240,11 @@ contract BattleshipGameTestnet {
             cellStatesBitmap,
             true
         );
+
+        // Return any excess payment to the player
+        if (refund > 0) {
+            payable(player).transfer(refund);
+        }
     }
 
     function handleRefund(uint256 callbackId) external payable {
