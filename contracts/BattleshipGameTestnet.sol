@@ -39,6 +39,8 @@ contract BattleshipGameTestnet {
     address private lastSunkShipPlayer;
     uint256 private totalHits;
     uint256 public totalZENAllocated;
+    mapping(uint256 => address) private callbackToPlayer;
+    mapping(address => uint256) private playerToRefundAmount;
 
     IERC20 public rewardToken;
     TenCallbacks private tenCallbacks;
@@ -175,11 +177,11 @@ contract BattleshipGameTestnet {
             msg.value - etherGasForHitProcessing
         );
 
-        // Register the callback with the TEN system
-        tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
+        // Register the callback with the TEN
+        uint256 callbackId = tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
+        callbackToPlayer[callbackId] = msg.sender;
     }
 
-    // This function will be called by the TEN system at the end of the block
     function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
         // Return any excess payment to the player
         if (refund > 0) {
@@ -242,6 +244,19 @@ contract BattleshipGameTestnet {
             cellStatesBitmap,
             true
         );
+    }
+
+    function handleRefund(uint256 callbackId) external payable {
+        address player = callbackToPlayer[callbackId];
+        playerToRefundAmount[player] += msg.value;
+    }
+
+    function claimRefund() external {
+        uint256 refundAmount = playerToRefundAmount[msg.sender];
+        require(refundAmount > 0, "No refunds to claim");
+        playerToRefundAmount[msg.sender] = 0;
+        (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+        require(success, "Transfer failed");
     }
 
     function getCellState(uint16 cellIndex) private view returns (uint8) {
