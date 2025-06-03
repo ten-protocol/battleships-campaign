@@ -26,7 +26,7 @@ contract BattleshipGameTestnet {
     }
 
     Ship[] public ships;
-    mapping(uint16 => uint8) private positionToShipIndex;
+    mapping(uint16 position => uint8 shipIndex) private positionToShipIndex;
     uint256 private seed;
     uint256 private nonce = 0;
     uint8 private sunkShipsCount;
@@ -34,13 +34,13 @@ contract BattleshipGameTestnet {
     uint8 public immutable gridSize;
     uint8 public immutable totalShips;
     uint256[] private cellStatesBitmap;
-    mapping(address => uint16) private playerHits;
-    mapping(address => uint16) private playerSinks;
+    mapping(address player => uint16 hits) private playerHits;
+    mapping(address player => uint16 sinks) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
     uint256 public totalZENAllocated;
-    mapping(uint256 => address) private callbackToPlayer;
-    mapping(address => uint256) private playerToRefundAmount;
+    mapping(uint256 callbackId => address player) private callbackToPlayer;
+    mapping(address player => uint256 refundAmount) private playerToRefundAmount;
 
     IERC20 public rewardToken;
     TenCallbacks private tenCallbacks;
