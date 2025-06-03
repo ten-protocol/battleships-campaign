@@ -140,7 +140,6 @@ contract BattleshipGameTestnet {
     // Modified hit function that registers a callback for execution at end of block
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, "Game is over");
-        require(msg.value >= 0.00443 ether, "Insufficient fee");
 
         uint16 cellIndex = uint16(y) * uint16(gridSize) + uint16(x);
         require(cellIndex < uint16(gridSize) * uint16(gridSize), "Invalid coordinates");
@@ -163,9 +162,10 @@ contract BattleshipGameTestnet {
             return;
         }
 
-        // Estimate gas needed for processing the hit
+        // Calculate total required payment: game fee + gas fee
         uint256 etherGasForHitProcessing = 200_000 * block.basefee;
-        require(msg.value >= etherGasForHitProcessing, "Insufficient gas for callback");
+        uint256 totalRequired = 0.00443 ether + etherGasForHitProcessing;
+        require(msg.value >= totalRequired, "Insufficient payment for game fee and gas");
 
         // Encode the function to be called by the TEN system contract
         bytes memory callbackTargetInfo = abi.encodeWithSelector(
@@ -174,14 +174,15 @@ contract BattleshipGameTestnet {
             x, 
             y, 
             cellIndex,
-            msg.value - etherGasForHitProcessing
+            msg.value - totalRequired
         );
 
-        // Register the callback with the TEN
+        // Register the callback with the TEN system
         uint256 callbackId = tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
         callbackToPlayer[callbackId] = msg.sender;
     }
 
+    // This function will be called by the TEN system at the end of the block
     function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
         // Return any excess payment to the player
         if (refund > 0) {
