@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -26,7 +26,7 @@ contract BattleshipGameTestnet {
     }
 
     Ship[] public ships;
-    mapping(uint16 => uint8) private positionToShipIndex;
+    mapping(uint16 position => uint8 shipIndex) private positionToShipIndex;
     uint256 private seed;
     uint256 private nonce = 0;
     uint8 private sunkShipsCount;
@@ -34,11 +34,13 @@ contract BattleshipGameTestnet {
     uint8 public immutable gridSize;
     uint8 public immutable totalShips;
     uint256[] private cellStatesBitmap;
-    mapping(address => uint16) private playerHits;
-    mapping(address => uint16) private playerSinks;
+    mapping(address player => uint16 hits) private playerHits;
+    mapping(address player => uint16 sinks) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
     uint256 public totalZENAllocated;
+    mapping(uint256 callbackId => address player) private callbackToPlayer;
+    mapping(address player => uint256 refundAmount) private playerToRefundAmount;
 
     IERC20 public rewardToken;
     TenCallbacks private tenCallbacks;
@@ -138,14 +140,14 @@ contract BattleshipGameTestnet {
     // Modified hit function that registers a callback for execution at end of block
     function hit(uint8 x, uint8 y) public payable {
         require(!gameOver, "Game is over");
-        require(msg.value >= 0.00443 ether, "Insufficient fee");
 
         uint16 cellIndex = uint16(y) * uint16(gridSize) + uint16(x);
         require(cellIndex < uint16(gridSize) * uint16(gridSize), "Invalid coordinates");
 
         uint8 cellState = getCellState(cellIndex);
         if (cellState != 0) {
-            payable(msg.sender).transfer(msg.value);
+            (bool success, ) = payable(msg.sender).call{value: msg.value}("");
+            require(success, "Transfer failed");
             emit HitFeedback(
                 msg.sender,
                 x,
@@ -161,9 +163,10 @@ contract BattleshipGameTestnet {
             return;
         }
 
-        // Estimate gas needed for processing the hit
+        // Calculate total required payment: game fee + gas fee
         uint256 etherGasForHitProcessing = 200_000 * block.basefee;
-        require(msg.value >= etherGasForHitProcessing, "Insufficient gas for callback");
+        uint256 totalRequired = 0.00443 ether + etherGasForHitProcessing;
+        require(msg.value >= totalRequired, "Insufficient payment for game fee and gas");
 
         // Encode the function to be called by the TEN system contract
         bytes memory callbackTargetInfo = abi.encodeWithSelector(
@@ -172,20 +175,16 @@ contract BattleshipGameTestnet {
             x, 
             y, 
             cellIndex,
-            msg.value - etherGasForHitProcessing
+            msg.value - totalRequired
         );
 
         // Register the callback with the TEN system
-        tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
+        uint256 callbackId = tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
+        callbackToPlayer[callbackId] = msg.sender;
     }
 
     // This function will be called by the TEN system at the end of the block
     function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
-        // Return any excess payment to the player
-        if (refund > 0) {
-            payable(player).transfer(refund);
-        }
-
         bool success;
         bool sunk;
         uint256 zenTransferred = 0;
@@ -242,6 +241,25 @@ contract BattleshipGameTestnet {
             cellStatesBitmap,
             true
         );
+
+        // Return any excess payment to the player
+        if (refund > 0) {
+            (bool success, ) = payable(player).call{value: refund}("");
+            require(success, "Transfer failed");;
+        }
+    }
+
+    function handleRefund(uint256 callbackId) external payable {
+        address player = callbackToPlayer[callbackId];
+        playerToRefundAmount[player] += msg.value;
+    }
+
+    function claimRefund() external {
+        uint256 refundAmount = playerToRefundAmount[msg.sender];
+        require(refundAmount > 0, "No refunds to claim");
+        playerToRefundAmount[msg.sender] = 0;
+        (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+        require(success, "Transfer failed");
     }
 
     function getCellState(uint16 cellIndex) private view returns (uint8) {
