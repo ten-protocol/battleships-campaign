@@ -245,7 +245,7 @@ contract BattleshipGameTestnet {
         // Return any excess payment to the player
         if (refund > 0) {
             (bool success, ) = payable(player).call{value: refund}("");
-            require(success, "Transfer failed");;
+            require(success, "Transfer failed");
         }
     }
 

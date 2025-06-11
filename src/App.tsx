@@ -4,7 +4,6 @@ import { useAccount } from 'wagmi';
 
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
 import CellsRemaining from '@/components/CellsRemaining/CellsRemaining';
-import DownTimeScreen from '@/components/DownTimeScreen/DownTimeScreen';
 import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 import GameStats from '@/components/GameStats/GameStats';
 import Graveyard from '@/components/Graveyard/Graveyard';
@@ -65,9 +64,6 @@ function App() {
         <div className="py-2 px-6">
             <PageHeader />
             <SocialShare />
-            {import.meta.env.VITE_BREAK_TIME ? (
-                <DownTimeScreen />
-            ) : (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
                         <div className="flex flex-col order-2 gap-6 lg:order-1">
@@ -90,7 +86,6 @@ function App() {
                     <FreePlayWindow />
                     <HelpWindow />
                 </>
-            )}
         </div>
     );
 }
