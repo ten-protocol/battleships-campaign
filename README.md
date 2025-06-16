@@ -4,7 +4,7 @@ Each successful hit or ship sinking is rewarded with a ZEN game token.
 
 ![In-game screenshot](./public/screenshot.png)
 
-## Local environment setup
+## Local environment setup.
 
 ### Set environment variables
 
