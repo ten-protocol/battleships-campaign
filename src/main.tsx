@@ -16,8 +16,10 @@ import './tailwind.css';
 
 const queryClient = new QueryClient();
 
+import { TEN_CHAIN_ID } from './lib/constants';
+
 export const ten = defineChain({
-    id: 443,
+    id: TEN_CHAIN_ID,
     name: 'TEN CHAIN',
     nativeCurrency: {
         decimals: 18,
@@ -40,7 +42,7 @@ export const wagmiConfig = createConfig({
     transports: {
         [ten.id]: fallback([
             unstable_connector(injected),
-            http('https://testnet.ten.xyz/v1/')
+            http('https://testnet-rpc.ten.xyz/v1/')
         ])
     }
 

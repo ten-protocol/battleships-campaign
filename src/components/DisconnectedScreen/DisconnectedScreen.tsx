@@ -48,7 +48,7 @@ export default function DisconnectedScreen({ contractError }: Props) {
                             rel="noopener"
                             target="_blank"
                         >
-                            HTTPS://GATEWAY.TEN.XYZ
+                            GATEWAY
                         </a>{' '}
                         and then Connect.
                     </p>
