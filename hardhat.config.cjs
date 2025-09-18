@@ -21,7 +21,7 @@ module.exports = {
   },
   networks: {
     ten: {
-      chainId: 443,
+      chainId: 8443,
       url: `https://testnet.obscu.ro/v1/${USER_KEY}`,
       gasPrice: 2000000000,
       accounts: [`0x${PRIVATE_KEY}`]
