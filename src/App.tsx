@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi';
 
 import BattleGrid from '@/components/BattleGrid/BattleGrid';
 import CellsRemaining from '@/components/CellsRemaining/CellsRemaining';
+import ConnectWalletScreen from '@/components/ConnectWalletScreen/ConnectWalletScreen';
 import FreePlayWindow from '@/components/FreePlayWindow/FreePlayWindow';
 import GameStats from '@/components/GameStats/GameStats';
 import Graveyard from '@/components/Graveyard/Graveyard';
@@ -12,8 +13,6 @@ import MessageLog from '@/components/MessageLog/MessageLog';
 import MetaMask from '@/components/MetaMask/MetaMask';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import ProcessingNotification from '@/components/ProcessingNotification/ProcessingNotification';
-import SocialShare from '@/components/SocialShare/SocialShare';
-import getWalletUserWallets from '@/lib/getUserWallets';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
@@ -42,7 +41,6 @@ function App() {
             trackEvent('connect_wallet', {
                 connected_wallet_address: address,
                 connected_wallet_type: connector?.name || 'unknown',
-                wallet_types: getWalletUserWallets(),
             });
         }
 
@@ -51,41 +49,39 @@ function App() {
 
             trackEvent('disconnect_wallet', {
                 connected_wallet_address: storedAddress,
-                wallet_types: getWalletUserWallets(),
             });
         }
     }, [status]);
 
-    if (!initialized) {
-        return null;
+    if (!initialized || status === 'disconnected') {
+        return <ConnectWalletScreen />;
     }
 
     return (
         <div className="py-2 px-6">
             <PageHeader />
-            <SocialShare />
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
-                        <div className="flex flex-col order-2 gap-6 lg:order-1">
-                            <Graveyard />
-                            <CellsRemaining />
-                        </div>
-                        <div className="overflow-hidden order-1 md:col-span-2 lg:order-2 lg:col-span-1">
-                            <BattleGrid />
-                        </div>
-                        <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 content-start">
-                            <MetaMask />
 
-                            <GameStats />
-                        </div>
-                        <div className="md:col-span-3 order-4">
-                            <MessageLog />
-                        </div>
+            <div className="z-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[220px_1fr_220px] gap-6">
+                    <div className="flex flex-col order-2 gap-6 z-10 lg:fixed lg:top-6 lg:left-6">
+                        <Graveyard />
+                        <CellsRemaining />
                     </div>
-                    <ProcessingNotification />
-                    <FreePlayWindow />
-                    <HelpWindow />
-                </>
+                    <div className="lg:fixed lg:inset-0">
+                        <BattleGrid />
+                    </div>
+                    <div className="flex flex-col gap-6 order-3 md:col-span-3 md:grid md:grid-cols-3 lg:col-span-1 lg:grid-cols-1 lg:fixed lg:top-6 lg:right-6 content-start">
+                        <MetaMask />
+                        <GameStats />
+                    </div>
+                    <div className="md:col-span-3 order-4 lg:fixed lg:bottom-16 lg:left-8 lg:right-8">
+                        <MessageLog />
+                    </div>
+                </div>
+                <ProcessingNotification />
+                <FreePlayWindow />
+                <HelpWindow />
+            </div>
         </div>
     );
 }

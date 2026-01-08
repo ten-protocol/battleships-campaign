@@ -14,7 +14,10 @@ type Props = {
     height?: number;
 };
 
-export default function BattleGridCanvas({ width = 900, height = 500 }: Props) {
+export default function BattleGridCanvas({ 
+    width = typeof window !== 'undefined' ? window.innerWidth : 900, 
+    height = typeof window !== 'undefined' ? window.innerHeight : 500 
+}: Props) {
     const [app, setApp] = useState<Application<ICanvas>>();
     const canvasRef = useRef<Stage>(null);
 
@@ -41,6 +44,12 @@ export default function BattleGridCanvas({ width = 900, height = 500 }: Props) {
 
         requestAnimationFrame(renderLoop);
     }, [app]);
+
+    useEffect(() => {
+        if (!app?.renderer || !width || !height) return;
+        
+        app.renderer.resize(width, height);
+    }, [app, width, height]);
 
     return (
         <Stage

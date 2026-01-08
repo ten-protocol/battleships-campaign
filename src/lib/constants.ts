@@ -10,7 +10,7 @@ export const FAUCET_URL = 'https://faucet.ten.xyz/';
 export const GATEWAY_URL = 'https://testnet.ten.xyz/';
 export const TPOINTS_INFO_URL =
     'https://ten-protocol.notion.site/t-points-System-49c994fac5b0415fa3ad75452e0f7db3';
-export const PLAY_TOKEN_SYMBOL = 'ZEN';
+export const PLAY_TOKEN_SYMBOL = 'ETH';
 export const HIT_REWARD = 1;
 export const SINK_REWARD = 3;
 export const FINAL_SINK_REWARD = 20;

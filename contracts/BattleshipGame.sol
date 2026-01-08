@@ -2,12 +2,16 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BattleshipGame is Ownable {
-    uint8 constant gridSize = 100;
-    uint8 constant totalShips = 249;
-    uint8 constant shipLength = 3;
+// TEN callbacks interface - prevents txn analysis attack or proxy exploits
+interface TenCallbacks {
+    function register(bytes calldata) external payable returns (uint256);
+}
+
+contract BattleshipGame {
+    uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
+    uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
+    uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
 
     struct Position {
         uint8 x;
@@ -16,73 +20,112 @@ contract BattleshipGame is Ownable {
 
     struct Ship {
         Position start;
-        bool[shipLength] hits;
+        uint8 length;
+        bool isHorizontal;
+        uint256 hitsBitmap;
     }
 
-    Ship[totalShips] public ships;
-    mapping(uint16 => uint8) private positionToShipIndex;
-    mapping(uint16 => bool) public hits;
-    mapping(uint16 => bool) private misses;
+    Ship[] public ships;
+    mapping(uint16 position => uint8 shipIndex) private positionToShipIndex;
     uint256 private seed;
     uint256 private nonce = 0;
-    uint256 public prizePool;
-    bool[totalShips] public graveyard;
-    uint8 public sunkShipsCount;
+    uint8 private sunkShipsCount;
     bool public gameOver;
-    Position[] private allHits;
-    Position[] private allMisses;
-
-    mapping(address => uint16) private playerHits;
-    mapping(address => uint16) private playerSinks;
+    uint8 public immutable gridSize;
+    uint8 public immutable totalShips;
+    uint256[] private cellStatesBitmap;
+    mapping(address player => uint16 hits) private playerHits;
+    mapping(address player => uint16 sinks) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
+    uint256 public totalZENAllocated;
+    mapping(uint256 callbackId => address player) private callbackToPlayer;
+    mapping(address player => uint256 refundAmount) private playerToRefundAmount;
 
-    event GameOver(address winner, uint256 prizePool);
-    event HitWithToken(address indexed player, uint8 x, uint8 y);
+    IERC20 public rewardToken;
+    TenCallbacks private tenCallbacks;
 
-    constructor() Ownable(msg.sender) {
-        seed = uint256(keccak256(abi.encodePacked(block.difficulty, block.timestamp, msg.sender)));
+    event GameOver(address winner, uint256 totalZENAllocated);
+    event HitFeedback(
+        address indexed user,
+        uint8 x,
+        uint8 y,
+        bool success,
+        bool sunk,
+        uint8 sunkShipsCount,
+        uint256 totalZENAllocated,
+        uint256 zenTransferred,
+        uint256[] gameState,
+        bool uniqueStrike
+    );
+
+    modifier onlyTenSystemCall() {
+        require(msg.sender == address(tenCallbacks), "Only TEN system can call");
+        _;
+    }
+
+    constructor(address tokenAddress, address tenCallbacksAddress, uint8 _gridSize, uint8 _totalShips) {
+        rewardToken = IERC20(tokenAddress);
+        tenCallbacks = TenCallbacks(tenCallbacksAddress);
+        gridSize = _gridSize;
+        totalShips = _totalShips;
+        seed = uint256(
+            keccak256(
+                abi.encodePacked(block.prevrandao, block.timestamp, msg.sender)
+            )
+        );
+        uint256 bitmapSize = ((uint256(gridSize) * uint256(gridSize) * 2) + 255) / 256;
+        cellStatesBitmap = new uint256[](bitmapSize);
         generatePositions();
     }
 
-    /// @notice Emitted when a guess is made.
-    /// @param user The address of the user making the guess.
-    /// @param guessedCoords The coordinates submitted by the user.
-    /// @param success True if the guess hit a ship, false otherwise.
-    //TODO: Add comments
-    event HitFeedback(address indexed user, uint8[2] guessedCoords, bool success, bool sunk, Position[] allHits, Position[] allMisses, bool[totalShips] graveyard, uint256 prizePool);
-
-    /// @notice Generates unique positions for ships on the grid.
     function generatePositions() private {
-        uint8 index = 0;
-        while (index < totalShips) {
+        while (ships.length < totalShips) {
             uint256 hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
-            for (uint8 i = 0; i < 36 && index < totalShips; i++) {
-                uint8 x = uint8(hash & 0x7F) % gridSize;
-                uint8 y = uint8((hash >> 7) & 0x7F) % gridSize;
+            for (uint8 i = 0; i < 36 && ships.length < totalShips; i++) {
+                uint8 x = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 y = uint8(hash & 0xFF) % gridSize;
+                hash >>= 8;
+                uint8 length = (uint8(hash & 0x03)) + 2;
+                hash >>= 2;
+                bool isHorizontal = (hash & 0x01) == 1;
+                hash >>= 1;
 
-                if (isPositionUniqueAndFits(x, y)) {
-                    ships[index].start = Position(x, y);
-                    for (uint8 j = 0; j < shipLength; j++) {
-                        uint16 positionKey = packCoordinates(x + j, y);
+                if (isPositionUniqueAndFits(x, y, length, isHorizontal)) {
+                    ships.push(Ship({
+                        start: Position(x, y),
+                        length: length,
+                        isHorizontal: isHorizontal,
+                        hitsBitmap: 0
+                    }));
+                    uint8 index = uint8(ships.length - 1);
+                    for (uint8 j = 0; j < length; j++) {
+                        uint8 posX = x + (isHorizontal ? j : 0);
+                        uint8 posY = y + (isHorizontal ? 0 : j);
+                        uint16 positionKey = packCoordinates(posX, posY);
                         positionToShipIndex[positionKey] = index + 1;
                     }
-                    index++;
                 }
-                hash >>= 14;
+                if (hash < 0xFF) {
+                    nonce++;
+                    hash = uint256(keccak256(abi.encodePacked(seed, nonce)));
+                }
             }
             nonce++;
         }
     }
 
-    /// @notice Checks if the ship position is unique and fits within the grid.
-    /// @param x The x-coordinate of the ship's start position.
-    /// @param y The y-coordinate of the ship's start position.
-    /// @return bool indicating whether the position is unique and fits within the grid.
-    function isPositionUniqueAndFits(uint8 x, uint8 y) private view returns (bool) {
-        if (x + shipLength > gridSize) return false;
-        for (uint8 j = 0; j < shipLength; j++) {
-            uint16 positionKey = packCoordinates(x + j, y);
+    function isPositionUniqueAndFits(uint8 x, uint8 y, uint8 length, bool isHorizontal) private view returns (bool) {
+        if (isHorizontal) {
+            if (x + length > gridSize) return false;
+        } else {
+            if (y + length > gridSize) return false;
+        }
+        for (uint8 j = 0; j < length; j++) {
+            uint8 posX = x + (isHorizontal ? j : 0);
+            uint8 posY = y + (isHorizontal ? 0 : j);
+            uint16 positionKey = packCoordinates(posX, posY);
             if (positionToShipIndex[positionKey] != 0) {
                 return false;
             }
@@ -90,176 +133,183 @@ contract BattleshipGame is Ownable {
         return true;
     }
 
-    /// @notice Packs x and y coordinates into a single uint16 value.
-    /// @param x The x-coordinate.
-    /// @param y The y-coordinate.
-    /// @return uint16 representing the packed coordinates.
     function packCoordinates(uint8 x, uint8 y) private pure returns (uint16) {
         return (uint16(x) << 8) | uint16(y);
     }
 
-    /// @notice Gets the position of a specific ship by its index.
-    /// @param shipIndex The index of the ship.
-    /// @return Position of the ship.
-    function getShipPosition(uint8 shipIndex) public view returns (Position memory) {
-        require(shipIndex - 1 < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex - 1].start;
-    }
-
-    /// @notice Gets positions of all ships.
-    /// @return Array of all ships.
-    function getAllShipPositions() public view returns (Ship[totalShips] memory) {
-        return ships;
-    }
-
-    /// @notice Gets the index of the ship at a specific grid position.
-    /// @param x The x-coordinate of the position.
-    /// @param y The y-coordinate of the position.
-    /// @return The index of the ship at the specified position.
-    function getShipAtPosition(uint8 x, uint8 y) public view returns (uint8) {
-        uint16 positionKey = packCoordinates(x, y);
-        uint8 shipIndex = positionToShipIndex[positionKey];
-        require(shipIndex != 0, 'No ship at given position');
-        return shipIndex;
-    }
-
-    /// @notice Hits a position on the grid and checks if a ship is hit.
-    /// @param x The x-coordinate of the position to hit.
-    /// @param y The y-coordinate of the position to hit.
+    // Modified hit function that registers a callback for execution at end of block
     function hit(uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
-        uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
-        _processHit(msg.sender, x, y);
+        require(!gameOver, "Game is over");
+
+        uint16 cellIndex = uint16(y) * uint16(gridSize) + uint16(x);
+        require(cellIndex < uint16(gridSize) * uint16(gridSize), "Invalid coordinates");
+
+        uint8 cellState = getCellState(cellIndex);
+        if (cellState != 0) {
+            (bool success, ) = payable(msg.sender).call{value: msg.value}("");
+            require(success, "Transfer failed");
+            emit HitFeedback(
+                msg.sender,
+                x,
+                y,
+                false,
+                false,
+                sunkShipsCount,
+                totalZENAllocated,
+                0,
+                cellStatesBitmap,
+                false
+            );
+            return;
+        }
+
+        // Calculate total required payment: game fee + gas fee
+        uint256 etherGasForHitProcessing = 200_000 * block.basefee;
+        uint256 totalRequired = 0.00443 ether + etherGasForHitProcessing;
+        require(msg.value >= totalRequired, "Insufficient payment for game fee and gas");
+
+        // Encode the function to be called by the TEN system contract
+        bytes memory callbackTargetInfo = abi.encodeWithSelector(
+            this.processHitCallback.selector,
+            msg.sender,
+            x,
+            y,
+            cellIndex,
+            msg.value - totalRequired
+        );
+
+        // Register the callback with the TEN system
+        uint256 callbackId = tenCallbacks.register{value: etherGasForHitProcessing}(callbackTargetInfo);
+        callbackToPlayer[callbackId] = msg.sender;
     }
 
-    function hitWithAddress(address player, uint8 x, uint8 y) public payable {
-        require(!gameOver, 'Game is over, no more hits accepted');
-        require(msg.value == 0.0443 ether, 'Incorrect fee amount');
-        uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
-        prizePool += msg.value; // Increment prize pool with the ETH sent by the player
-        _processHit(player, x, y);
-    }
-
-    function _processHit(address player, uint8 x, uint8 y) private {
-        uint16 positionKey = packCoordinates(x, y);
-        require(!hits[positionKey], 'Cell already hit');
+    // This function will be called by the TEN system at the end of the block
+    function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
         bool success;
         bool sunk;
+        uint256 zenTransferred = 0;
 
-        prizePool += msg.value;
-        hits[positionKey] = true;
         totalHits++;
         playerHits[player]++;
 
+        uint16 positionKey = packCoordinates(x, y);
         uint8 shipIndex = positionToShipIndex[positionKey];
         if (shipIndex != 0) {
             shipIndex--;
             success = true;
             Ship storage ship = ships[shipIndex];
-            uint8 hitIndex = x - ship.start.x;
-            ship.hits[hitIndex] = true;
-            allHits.push(Position(x, y));
+            uint8 hitIndex = ship.isHorizontal ? (x - ship.start.x) : (y - ship.start.y);
 
-            bool allHit = true;
-            for (uint8 i = 0; i < shipLength; i++) {
-                if (!ship.hits[i]) {
-                    allHit = false;
-                    break;
-                }
-            }
-            if (allHit) {
+            ship.hitsBitmap |= uint256(1) << hitIndex;
+
+            setCellState(cellIndex, 2);
+
+            if (ship.hitsBitmap == (uint256(1) << ship.length) - 1) {
                 sunk = true;
-                graveyard[shipIndex] = true;
                 sunkShipsCount++;
                 playerSinks[player]++;
-
                 if (sunkShipsCount == totalShips) {
                     gameOver = true;
                     lastSunkShipPlayer = player;
-                    emit GameOver(lastSunkShipPlayer, prizePool);
+                    zenTransferred = FINAL_SINK_REWARD;
+                    emit GameOver(lastSunkShipPlayer, totalZENAllocated);
+                } else {
+                    zenTransferred = SINK_REWARD;
                 }
+            } else {
+                zenTransferred = HIT_REWARD;
             }
-        }
-        else {
+        } else {
             success = false;
-            misses[positionKey] = true;
-            allMisses.push(Position(x, y));
+            setCellState(cellIndex, 1);
         }
 
-        emit HitFeedback(msg.sender, [x, y], success, sunk, allHits, allMisses, graveyard, prizePool);
+        if (zenTransferred > 0) {
+            rewardToken.transfer(player, zenTransferred);
+            totalZENAllocated += zenTransferred;
+        }
+
+        emit HitFeedback(
+            player,
+            x,
+            y,
+            success,
+            sunk,
+            sunkShipsCount,
+            totalZENAllocated,
+            zenTransferred,
+            cellStatesBitmap,
+            true
+        );
+
+        // Return any excess payment to the player
+        if (refund > 0) {
+            (success, ) = payable(player).call{value: refund}("");
+            require(success, "Transfer failed");
+        }
     }
 
-    /// @notice Checks if a specific position on the grid is hit.
-    /// @param x The x-coordinate of the position.
-    /// @param y The y-coordinate of the position.
-    /// @return bool indicating whether the position is hit.
-    function isHit(uint8 x, uint8 y) public view returns (bool) {
-        uint16 positionKey = packCoordinates(x, y);
-        return hits[positionKey];
+    function handleRefund(uint256 callbackId) external payable {
+        address player = callbackToPlayer[callbackId];
+        playerToRefundAmount[player] += msg.value;
     }
 
-    /// @notice Checks if a specific ship is sunk.
-    /// @param shipIndex The index of the ship.
-    /// @return bool indicating whether the ship is sunk.
-    function isSunk(uint8 shipIndex) public view returns (bool) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return graveyard[shipIndex];
+    function claimRefund() external {
+        uint256 refundAmount = playerToRefundAmount[msg.sender];
+        require(refundAmount > 0, "No refunds to claim");
+        playerToRefundAmount[msg.sender] = 0;
+        (bool success, ) = payable(msg.sender).call{value: refundAmount}("");
+        require(success, "Transfer failed");
     }
 
-    /// @notice Gets the hit status of each part of a specific ship.
-    /// @param shipIndex The index of the ship.
-    /// @return Array indicating which parts of the ship are hit.
-    function getHitsOnShip(uint8 shipIndex) public view returns (bool[shipLength] memory) {
-        require(shipIndex < totalShips, 'Ship index out of bounds');
-        return ships[shipIndex].hits;
+    function getCellState(uint16 cellIndex) private view returns (uint8) {
+        uint256 wordIndex = cellIndex / 128;
+        uint256 bitIndex = (cellIndex % 128) * 2;
+
+        if (bitIndex <= 254) {
+            uint256 value = (cellStatesBitmap[wordIndex] >> bitIndex) & 0x03;
+            return uint8(value);
+        } else {
+            uint256 lowerBits = 256 - bitIndex;
+            uint256 upperBits = 2 - lowerBits;
+
+            uint256 lowerPart = (cellStatesBitmap[wordIndex] >> bitIndex) & ((1 << lowerBits) - 1);
+            uint256 upperPart = (cellStatesBitmap[wordIndex + 1]) & ((1 << upperBits) - 1);
+
+            uint256 value = (upperPart << lowerBits) | lowerPart;
+            return uint8(value);
+        }
     }
 
-    /// @notice Gets the status of all ships in the graveyard.
-    /// @return Array indicating which ships are sunk.
-    function getGraveyard() public view returns (bool[totalShips] memory) {
-        return graveyard;
-    }
+    function setCellState(uint16 cellIndex, uint8 state) private {
+        uint256 wordIndex = cellIndex / 128;
+        uint256 bitIndex = (cellIndex % 128) * 2;
 
-    /// @notice Gets all hit positions on the grid.
-    /// @return An array of Position structs representing the hit positions.
-    function getAllHits() public view returns (Position[] memory) {
-        return allHits;
-    }
+        if (bitIndex <= 254) {
+            uint256 mask = uint256(0x03) << bitIndex;
+            cellStatesBitmap[wordIndex] = (cellStatesBitmap[wordIndex] & ~mask) | (uint256(state) << bitIndex);
+        } else {
+            uint256 lowerBits = 256 - bitIndex;
+            uint256 upperBits = 2 - lowerBits;
 
-    /// @notice Gets all miss positions so far.
-    /// @return Array of positions that have been missed.
-    function getAllMisses() public view returns (Position[] memory) {
-        return allMisses;
+            uint256 lowerMask = ((1 << lowerBits) - 1) << bitIndex;
+            uint256 upperMask = (1 << upperBits) - 1;
+
+            cellStatesBitmap[wordIndex] = (cellStatesBitmap[wordIndex] & ~lowerMask) | ((state & ((1 << lowerBits) - 1)) << bitIndex);
+            cellStatesBitmap[wordIndex + 1] = (cellStatesBitmap[wordIndex + 1] & ~upperMask) | (state >> lowerBits);
+        }
     }
 
     function getPersonalStats() public view returns (uint16 personalHits, uint16 personalSinks) {
         personalHits = playerHits[msg.sender];
         personalSinks = playerSinks[msg.sender];
-        return (personalHits, personalSinks);
     }
 
-    function claimReward() public {
-        require(gameOver, 'Game is not over yet');
-        uint256 reward;
+    function getZenTokenBalance() public view returns (uint256) {
+        return rewardToken.balanceOf(address(this));
+    }
 
-        uint256 hitReward = (prizePool * 30) / 100;
-        reward += (hitReward * playerHits[msg.sender]) / totalHits;
-
-        uint256 sinkReward = (prizePool * 65) / 100;
-        reward += (sinkReward * playerSinks[msg.sender]) / sunkShipsCount;
-
-        if (msg.sender == lastSunkShipPlayer) {
-            uint256 finalShipReward = (prizePool * 5) / 100;
-            reward += finalShipReward;
-        }
-
-        playerHits[msg.sender] = 0;
-        playerSinks[msg.sender] = 0;
-
-        payable(msg.sender).transfer(reward);
+    function gameInfo() public view returns (bool, uint8, uint8) {
+        return (gameOver, gridSize, totalShips);
     }
 }

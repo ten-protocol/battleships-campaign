@@ -162,11 +162,11 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         let newX = x;
         let newY = y;
 
-        if (newX > 0) {
-            newX = 0;
+        if (newX > width / 2) {
+            newX = width / 2;
         }
-        if (newX < -1 * (gridWidth - width)) {
-            newX = -1 * (gridWidth - width);
+        if (newX < -1 * (gridWidth - width / 2)) {
+            newX = -1 * (gridWidth - width / 2);
         }
 
         if (newY > 0) {

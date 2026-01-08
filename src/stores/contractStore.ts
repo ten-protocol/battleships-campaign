@@ -1,11 +1,13 @@
+import { useSessionKeyStore } from '@tenprotocol/ten-kit';
 import { ethers, formatUnits } from 'ethers';
 import { WriteContractErrorType } from 'viem';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { MOVE_FEE } from '@/lib/constants';
 import decodeGameState from '@/lib/decodeGameState';
-import getWalletUserWallets from '@/lib/getUserWallets';
 import placeHit from '@/lib/placeHit';
+import { playErrorSound } from '@/lib/sounds';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
@@ -75,10 +77,16 @@ export const useContractStore = create<ContractStore>(
                 const addNewMessage = useMessageStore.getState().addNewMessage;
                 const { address, connector } = useWalletStore.getState();
                 const addPlayToGameContract = usePlayTrackerStore.getState().addPlayToGameContract;
+                const { balance } = useSessionKeyStore.getState();
+                const hasEnoughBalance = balance?.eth && balance.eth >= parseFloat(MOVE_FEE);
+                
+                if (!hasEnoughBalance) {
+                    addNewMessage('Insufficient funds to play. Top up your balance.', 'ERROR');
+                    return;
+                }
 
                 trackEvent('guess_placed', {
                     wallet_address: address,
-                    wallet_types: getWalletUserWallets(),
                     wallet_used: connector,
                 });
 
@@ -91,7 +99,6 @@ export const useContractStore = create<ContractStore>(
                     const lastPlay = logs.length === 2;
                     trackEvent('guess_transaction_success', {
                         wallet_address: address,
-                        wallet_types: getWalletUserWallets(),
                         wallet_used: connector,
                     });
                     addNewMessage('Target strike tx: ' + txHash);
@@ -152,6 +159,7 @@ export const useContractStore = create<ContractStore>(
                     const e = error as WriteContractErrorType;
 
                     set({ guessState: 'ERROR' });
+                    playErrorSound();
 
                     if (e.message && e.message.includes('Game is over')) {
                         console.log('GAME OVER');
@@ -164,7 +172,6 @@ export const useContractStore = create<ContractStore>(
 
                     trackEvent('guess_transaction_error', {
                         wallet_address: address,
-                        wallet_types: getWalletUserWallets(),
                         wallet_used: connector,
                         error: e?.message,
                     });

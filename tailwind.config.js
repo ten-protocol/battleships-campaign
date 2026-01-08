@@ -9,6 +9,10 @@ module.exports = {
         accentBackground: 'rgb(var(--color-accent) / .08)',
         bg: 'var(--color-bg)',
         translucentBg: 'var(--color-translucent-bg)',
+      },
+      fontFamily: {
+        sans: ['Space Mono', 'monospace'],
+        heading: ['Chakra Petch', 'sans-serif'],
       }
     },
   },
