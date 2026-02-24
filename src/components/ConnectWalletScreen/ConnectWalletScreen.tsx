@@ -1,10 +1,10 @@
-import { ConnectWalletButton } from '@tenprotocol/ten-kit';
+import { TenConnectButton } from '@tenprotocol/ten-kit';
 
 import bgVideo from '@/assets/bg-control-room.mp4';
 import bgPoster from '@/assets/bsg-bg.webp';
+import tenLogo from '@/assets/white_logotype.png';
 import PageHeader from '@/components/PageHeader/PageHeader';
 import SocialShare from '@/components/SocialShare/SocialShare';
-import tenLogo from '@/assets/white_logotype.png';
 
 export default function ConnectWalletScreen() {
     return (
@@ -45,7 +45,7 @@ export default function ConnectWalletScreen() {
                         WORLD FIRST ONCHAIN BATTLESHIPS
                     </h2>
                     <div className="text-center">
-                        <ConnectWalletButton />
+                        <TenConnectButton />
                     </div>
 
                     <div className="mt-24 flex flex-col items-center">
@@ -57,4 +57,3 @@ export default function ConnectWalletScreen() {
         </div>
     );
 }
-

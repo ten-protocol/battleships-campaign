@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+pragma solidity ^0.8.26;
 
 // TEN callbacks interface - prevents txn analysis attack or proxy exploits
 interface TenCallbacks {
@@ -9,9 +7,14 @@ interface TenCallbacks {
 }
 
 contract BattleshipGameTestnet {
-    uint256 constant HIT_REWARD = 1 * 10**18; // 1 ZEN token (18 decimals)
-    uint256 constant SINK_REWARD = 3 * 10**18; // 3 ZEN tokens
-    uint256 constant FINAL_SINK_REWARD = 20 * 10**18; // 20 ZEN tokens
+    uint256 constant MOVE_FEE = 0.000443 ether;
+    address public owner;
+
+    // Dynamic rewards calculated from game parameters
+    uint256 public hitReward;
+    uint256 public sinkReward;
+    uint256 public finalSinkReward;
+    uint256 public totalShipCells;
 
     struct Position {
         uint8 x;
@@ -38,14 +41,13 @@ contract BattleshipGameTestnet {
     mapping(address player => uint16 sinks) private playerSinks;
     address private lastSunkShipPlayer;
     uint256 private totalHits;
-    uint256 public totalZENAllocated;
+    uint256 public totalETHAwarded;
     mapping(uint256 callbackId => address player) private callbackToPlayer;
     mapping(address player => uint256 refundAmount) private playerToRefundAmount;
 
-    IERC20 public rewardToken;
     TenCallbacks private tenCallbacks;
 
-    event GameOver(address winner, uint256 totalZENAllocated);
+    event GameOver(address winner, uint256 totalETHAwarded);
     event HitFeedback(
         address indexed user,
         uint8 x,
@@ -53,30 +55,36 @@ contract BattleshipGameTestnet {
         bool success,
         bool sunk,
         uint8 sunkShipsCount,
-        uint256 totalZENAllocated,
-        uint256 zenTransferred,
+        uint256 totalETHAwarded,
+        uint256 ethAwarded,
         uint256[] gameState,
         bool uniqueStrike
     );
 
-    modifier onlyTenSystemCall() { 
+    modifier onlyTenSystemCall() {
         require(msg.sender == address(tenCallbacks), "Only TEN system can call");
         _;
     }
 
-    constructor(address tokenAddress, address tenCallbacksAddress, uint8 _gridSize, uint8 _totalShips) {
-        rewardToken = IERC20(tokenAddress);
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call");
+        _;
+    }
+
+    constructor(address tenCallbacksAddress, uint8 _gridSize, uint8 _totalShips) {
+        owner = msg.sender;
         tenCallbacks = TenCallbacks(tenCallbacksAddress);
         gridSize = _gridSize;
         totalShips = _totalShips;
         seed = uint256(
             keccak256(
-                abi.encodePacked(block.difficulty, block.timestamp, msg.sender)
+                abi.encodePacked(block.prevrandao, block.timestamp, msg.sender)
             )
         );
         uint256 bitmapSize = ((uint256(gridSize) * uint256(gridSize) * 2) + 255) / 256;
         cellStatesBitmap = new uint256[](bitmapSize);
         generatePositions();
+        calculateRewards();
     }
 
     function generatePositions() private {
@@ -99,6 +107,7 @@ contract BattleshipGameTestnet {
                         isHorizontal: isHorizontal,
                         hitsBitmap: 0
                     }));
+                    totalShipCells += length;
                     uint8 index = uint8(ships.length - 1);
                     for (uint8 j = 0; j < length; j++) {
                         uint8 posX = x + (isHorizontal ? j : 0);
@@ -114,6 +123,23 @@ contract BattleshipGameTestnet {
             }
             nonce++;
         }
+    }
+
+    function calculateRewards() private {
+        // Expected plays = 50% of grid (worst case assumption for house edge)
+        uint256 expectedPlays = (uint256(gridSize) * uint256(gridSize)) / 2;
+
+        // Prize pool = 80% of expected fees (20% house edge)
+        uint256 prizePool = (expectedPlays * MOVE_FEE * 80) / 100;
+
+        // Hit reward = 60% of pool distributed across all ship cells
+        hitReward = (prizePool * 60) / (100 * totalShipCells);
+
+        // Sink reward = 25% of pool distributed across all ships
+        sinkReward = (prizePool * 25) / (100 * uint256(totalShips));
+
+        // Final sink reward = 15% of pool
+        finalSinkReward = (prizePool * 15) / 100;
     }
 
     function isPositionUniqueAndFits(uint8 x, uint8 y, uint8 length, bool isHorizontal) private view returns (bool) {
@@ -155,7 +181,7 @@ contract BattleshipGameTestnet {
                 false,
                 false,
                 sunkShipsCount,
-                totalZENAllocated,
+                totalETHAwarded,
                 0,
                 cellStatesBitmap,
                 false
@@ -164,16 +190,16 @@ contract BattleshipGameTestnet {
         }
 
         // Calculate total required payment: game fee + gas fee
-        uint256 etherGasForHitProcessing = 200_000 * block.basefee;
-        uint256 totalRequired = 0.00443 ether + etherGasForHitProcessing;
+        uint256 etherGasForHitProcessing = 400_000 * block.basefee;
+        uint256 totalRequired = MOVE_FEE + etherGasForHitProcessing;
         require(msg.value >= totalRequired, "Insufficient payment for game fee and gas");
 
         // Encode the function to be called by the TEN system contract
         bytes memory callbackTargetInfo = abi.encodeWithSelector(
-            this.processHitCallback.selector, 
-            msg.sender, 
-            x, 
-            y, 
+            this.processHitCallback.selector,
+            msg.sender,
+            x,
+            y,
             cellIndex,
             msg.value - totalRequired
         );
@@ -187,7 +213,7 @@ contract BattleshipGameTestnet {
     function processHitCallback(address player, uint8 x, uint8 y, uint16 cellIndex, uint256 refund) external onlyTenSystemCall {
         bool success;
         bool sunk;
-        uint256 zenTransferred = 0;
+        uint256 ethAwarded = 0;
 
         totalHits++;
         playerHits[player]++;
@@ -211,22 +237,23 @@ contract BattleshipGameTestnet {
                 if (sunkShipsCount == totalShips) {
                     gameOver = true;
                     lastSunkShipPlayer = player;
-                    zenTransferred = FINAL_SINK_REWARD;
-                    emit GameOver(lastSunkShipPlayer, totalZENAllocated);
+                    ethAwarded = finalSinkReward;
+                    emit GameOver(lastSunkShipPlayer, totalETHAwarded);
                 } else {
-                    zenTransferred = SINK_REWARD;
+                    ethAwarded = sinkReward;
                 }
             } else {
-                zenTransferred = HIT_REWARD;
+                ethAwarded = hitReward;
             }
         } else {
             success = false;
             setCellState(cellIndex, 1);
         }
 
-        if (zenTransferred > 0) {
-            rewardToken.transfer(player, zenTransferred);
-            totalZENAllocated += zenTransferred;
+        if (ethAwarded > 0) {
+            (bool rewardSuccess, ) = payable(player).call{value: ethAwarded}("");
+            require(rewardSuccess, "Reward transfer failed");
+            totalETHAwarded += ethAwarded;
         }
 
         emit HitFeedback(
@@ -236,16 +263,16 @@ contract BattleshipGameTestnet {
             success,
             sunk,
             sunkShipsCount,
-            totalZENAllocated,
-            zenTransferred,
+            totalETHAwarded,
+            ethAwarded,
             cellStatesBitmap,
             true
         );
 
         // Return any excess payment to the player
         if (refund > 0) {
-            (bool success, ) = payable(player).call{value: refund}("");
-            require(success, "Transfer failed");
+            (bool refundSuccess, ) = payable(player).call{value: refund}("");
+            require(refundSuccess, "Transfer failed");
         }
     }
 
@@ -305,9 +332,19 @@ contract BattleshipGameTestnet {
         personalSinks = playerSinks[msg.sender];
     }
 
-    function getZenTokenBalance() public view returns (uint256) {
-        return rewardToken.balanceOf(address(this));
+    function getEthBalance() public view returns (uint256) {
+        return address(this).balance;
     }
+
+    function withdraw(uint256 amount) external onlyOwner {
+        uint256 balance = address(this).balance;
+        uint256 withdrawAmount = amount == 0 ? balance : amount;
+        require(withdrawAmount <= balance, "Insufficient balance");
+        (bool success, ) = payable(owner).call{value: withdrawAmount}("");
+        require(success, "Withdrawal failed");
+    }
+
+    receive() external payable {}
 
     function gameInfo() public view returns (bool, uint8, uint8) {
         return (gameOver, gridSize, totalShips);

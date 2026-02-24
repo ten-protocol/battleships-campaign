@@ -32,7 +32,7 @@ export default function MessageLog() {
                     : 'Message Log'
             }
         >
-            <div className="overflow-y-auto max-h-40">
+            <div className="overflow-y-auto max-h-20">
                 <ul className="flex flex-col-reverse justify-start">
                     {displayedItems.map((message, i) => (
                         <li className={styles.line} key={message.id + i}>

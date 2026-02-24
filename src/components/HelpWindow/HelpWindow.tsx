@@ -1,6 +1,6 @@
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
-import { FINAL_SINK_REWARD, HIT_REWARD, PLAY_TOKEN_SYMBOL, SINK_REWARD } from '@/lib/constants';
+import { PLAY_TOKEN_SYMBOL } from '@/lib/constants';
 import { useGameStore } from '@/stores/gameStore';
 
 export default function HelpWindow() {
@@ -49,32 +49,16 @@ export default function HelpWindow() {
                 <div className="mb-4">
                     <h2 className="text-xl font-semibold mb-2">Rewards</h2>
                     <p className="text-sm">
-                        Each time a player hits a ship they are rewarded with a {PLAY_TOKEN_SYMBOL}{' '}
-                        token.
+                        Each time a player hits a ship they are rewarded with {PLAY_TOKEN_SYMBOL}.
+                        Rewards are calculated dynamically based on grid size and number of ships.
                     </p>
                     <ul className="list-inside mt-2">
-                        <li>
-                            Hit a ship - {HIT_REWARD} {PLAY_TOKEN_SYMBOL}
-                        </li>
-                        <li>
-                            Destroy a ship - {SINK_REWARD} {PLAY_TOKEN_SYMBOL}
-                        </li>
-                        <li>
-                            Destroy the final ship - {FINAL_SINK_REWARD} {PLAY_TOKEN_SYMBOL}
-                        </li>
+                        <li>Hit a ship - small {PLAY_TOKEN_SYMBOL} reward</li>
+                        <li>Destroy a ship - bonus {PLAY_TOKEN_SYMBOL} reward</li>
+                        <li>Destroy the final ship - jackpot {PLAY_TOKEN_SYMBOL} reward</li>
                     </ul>
                 </div>
 
-                <div className="mb-4">
-                    <h2 className="text-xl font-semibold mb-2">
-                        {PLAY_TOKEN_SYMBOL} TOKEN CONTRACT ADDRESS
-                    </h2>
-                    <p className="text-sm">
-                        To see the token balance in your wallet you'll need to import the token into
-                        Metamask
-                    </p>
-                    <code className="mt-2">{import.meta.env.VITE_ZEN_CONTRACT_ADDRESS}</code>
-                </div>
             </div>
         </HudWindow>
     );

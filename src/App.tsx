@@ -74,7 +74,7 @@ function App() {
                         <MetaMask />
                         <GameStats />
                     </div>
-                    <div className="md:col-span-3 order-4 lg:fixed lg:bottom-16 lg:left-8 lg:right-8">
+                    <div className="md:col-span-3 order-4 lg:fixed lg:bottom-2 lg:left-6 lg:right-6">
                         <MessageLog />
                     </div>
                 </div>

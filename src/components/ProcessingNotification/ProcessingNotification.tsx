@@ -1,26 +1,42 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 import Button from '@/components/Button/Button';
 import HudWindow from '@/components/HudWindow/HudWindow';
 import SocialShare from '@/components/SocialShare/SocialShare';
 import {
-    FAUCET_URL,
-    FINAL_SINK_REWARD,
+    BRIDGE_URL,
     GATEWAY_URL,
-    HIT_REWARD,
     MOVE_FEE,
     PLAY_TOKEN_SYMBOL,
-    SINK_REWARD,
 } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
 
+const HIT_DELAY_MS = 1500; // Delay before showing dialog for hits so user can see animation
+
 export default function ProcessingNotification() {
-    const [guessState, resetGuessState, lastReward, gameOver] = useContractStore((state) => [
+    const [guessState, resetGuessState, lastReward, lastRewardType, gameOver] = useContractStore((state) => [
         state.guessState,
         state.resetGuessState,
         state.lastReward,
+        state.lastRewardType,
         state.gameOver,
     ]);
+
+    const [showHitDialog, setShowHitDialog] = useState(false);
+
+    // Handle delayed showing of dialog for HIT and WINNING_HIT
+    useEffect(() => {
+        if (guessState === 'HIT' || guessState === 'WINNING_HIT') {
+            setShowHitDialog(false);
+            const timer = setTimeout(() => {
+                setShowHitDialog(true);
+            }, HIT_DELAY_MS);
+            return () => clearTimeout(timer);
+        } else {
+            setShowHitDialog(false);
+        }
+    }, [guessState]);
 
     let footerContent = <div />;
     let bodyContent = <div />;
@@ -31,17 +47,15 @@ export default function ProcessingNotification() {
 
     const CloseButton = <Button onClick={handleClose}>Close</Button>;
 
+    // Only show dialog for errors (ERROR, INSUFFICIENT_FUNDS) and hits (HIT, WINNING_HIT)
+    const isErrorState = guessState === 'ERROR' || guessState === 'INSUFFICIENT_FUNDS';
+    const isHitState = guessState === 'HIT' || guessState === 'WINNING_HIT';
+    
+    // Don't show if: IDLE, gameOver, or not an error/hit state
     if (guessState === 'IDLE' || gameOver) return null;
-
-    if (guessState === 'STARTED') {
-        footerContent = <p>Processing...</p>;
-        bodyContent = (
-            <div className="flex flex-col items-start">
-                <p className="text-lg inline-block px-1">Target locked and confirmed.</p>
-                <p className="text-sm px-1">Initiating plasma cannon sequence</p>
-            </div>
-        );
-    }
+    if (!isErrorState && !isHitState) return null;
+    // For hits, wait for the delay before showing
+    if (isHitState && !showHitDialog) return null;
 
     if (guessState === 'ERROR') {
         footerContent = <div>{CloseButton}</div>;
@@ -55,11 +69,11 @@ export default function ProcessingNotification() {
                     <li className="text-sm px-1 mb-2">
                         1. Insufficient Funds. Get more from the{' '}
                         <a
-                            href={FAUCET_URL}
+                            href={BRIDGE_URL}
                             target="_blank"
                             className="text-accent hover:underline"
                         >
-                            TEN Faucet.
+                            TEN Bridge.
                         </a>
                     </li>
                     <li className="text-sm px-1">
@@ -81,48 +95,31 @@ export default function ProcessingNotification() {
         footerContent = <div>{CloseButton}</div>;
         bodyContent = (
             <div className="flex flex-col items-start">
-                <p className="text-lg bg-red-600 inline-block px-1">Insufficient funds</p>
-                <p className="text-sm mt-2">At least {MOVE_FEE} of ETH is required to play.</p>
-                <p className="text-sm mt-2">Get more from the faucet (link below).</p>
-                <div className="mt-8 flex gap-4 w-full justify-center">
-                    <a href={FAUCET_URL} target="_blank">
-                        <Button variant="light">TEN Faucet</Button>
+                <p className="text-lg bg-red-600 inline-block px-1">INSUFFICIENT FUNDS</p>
+                <p className="text-sm mt-3">
+                    Each shot costs <span className="font-bold text-accent">{MOVE_FEE} {PLAY_TOKEN_SYMBOL}</span>
+                </p>
+                
+                <div className="mt-4 p-3 bg-black/30 border border-white/20">
+                    <p className="text-sm font-semibold mb-2">How to top up:</p>
+                    <ol className="text-sm list-decimal list-inside space-y-2">
+                        <li>
+                            Click the <span className="text-accent">Wallet</span> button in the top-right panel
+                        </li>
+                        <li>
+                            Use the <span className="text-accent">Top Up</span> option to transfer {PLAY_TOKEN_SYMBOL} to your session key
+                        </li>
+                    </ol>
+                </div>
+
+                <p className="text-xs mt-4 opacity-70">
+                    Need {PLAY_TOKEN_SYMBOL}? Visit our bridge:
+                </p>
+                <div className="mt-2 flex gap-4 w-full justify-center">
+                    <a href={BRIDGE_URL} target="_blank" rel="noopener noreferrer">
+                        <Button variant="light">TEN Bridge</Button>
                     </a>
                 </div>
-            </div>
-        );
-    }
-
-    if (guessState === 'TRANSACTION_SUCCESS') {
-        footerContent = <p>CANNONS FIRED...</p>;
-        bodyContent = (
-            <div className="flex flex-col items-start">
-                <p className="text-lg inline-block px-1">Ordinance en route to target</p>
-                <p className="text-sm inline-block px-1">Monitor for impact confirmation</p>
-            </div>
-        );
-    }
-
-    if (guessState === 'MISS') {
-        footerContent = <div>{CloseButton}</div>;
-        bodyContent = (
-            <div className="flex flex-col items-start">
-                <p className="text-lg inline-block px-1">Shot failed to find target</p>
-                <p className="text-sm inline-block px-1">
-                    Initiate trajectory analysis and recalibrate targeting systems
-                </p>
-            </div>
-        );
-    }
-
-    if (guessState === 'ALREADY_HIT') {
-        footerContent = <div>{CloseButton}</div>;
-        bodyContent = (
-            <div className="flex flex-col items-start">
-                <p className="text-lg inline-block px-1">That cell had already been targeted.</p>
-                <p className="text-sm inline-block px-1">
-                    Integrate updated intel and recalibrate for immediate re-engagement.
-                </p>
             </div>
         );
     }
@@ -131,7 +128,7 @@ export default function ProcessingNotification() {
         footerContent = <div>{CloseButton}</div>;
         bodyContent = (
             <div className="flex flex-col items-start">
-                {lastReward === HIT_REWARD && (
+                {lastRewardType === 'HIT' && (
                     <>
                         <p className="text-lg bg-blue-600 inline-block px-1 mb-2">DIRECT HIT</p>
                         <p className="text-sm inline-block px-1">
@@ -139,7 +136,7 @@ export default function ProcessingNotification() {
                         </p>
                     </>
                 )}
-                {lastReward === SINK_REWARD && (
+                {lastRewardType === 'SINK' && (
                     <>
                         <p className="text-lg bg-blue-600 inline-block px-1 mb-2">SHIP DESTROYED</p>
                         <p className="text-sm inline-block px-1">
@@ -147,7 +144,7 @@ export default function ProcessingNotification() {
                         </p>
                     </>
                 )}
-                {lastReward === FINAL_SINK_REWARD && (
+                {lastRewardType === 'FINAL_SINK' && (
                     <>
                         <p className="text-lg bg-blue-600 inline-block px-1 mb-2">
                             FINAL SHIP DESTROYED

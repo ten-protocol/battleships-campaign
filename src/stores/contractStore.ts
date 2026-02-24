@@ -7,13 +7,15 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { MOVE_FEE } from '@/lib/constants';
 import decodeGameState from '@/lib/decodeGameState';
 import placeHit from '@/lib/placeHit';
-import { playErrorSound } from '@/lib/sounds';
+import { playErrorSound, playHitSound, playMissSound, playSinkSound, playWinningHitSound } from '@/lib/sounds';
 import { trackEvent } from '@/lib/trackEvent';
 import { useMessageStore } from '@/stores/messageStore';
 import { usePlayTrackerStore } from '@/stores/playTrackerStore';
 import { useWalletStore } from '@/stores/walletStore';
 
 import { useGameStore } from './gameStore';
+
+export type RewardType = 'HIT' | 'SINK' | 'FINAL_SINK' | null;
 
 export type ContractState = {
     hits: [number, number][];
@@ -27,6 +29,7 @@ export type ContractState = {
     lastGuessCoords: number[] | null;
     lastError: string;
     lastReward: number;
+    lastRewardType: RewardType;
     gameInfoError: boolean;
 };
 
@@ -71,6 +74,7 @@ export const useContractStore = create<ContractStore>(
             lastGuessCoords: null,
             previousContractAddresses: [],
             lastReward: 0,
+            lastRewardType: null as RewardType,
             gameInfoError: false,
 
             submitGuess: async (x: number, y: number) => {
@@ -81,7 +85,7 @@ export const useContractStore = create<ContractStore>(
                 const hasEnoughBalance = balance?.eth && balance.eth >= parseFloat(MOVE_FEE);
                 
                 if (!hasEnoughBalance) {
-                    addNewMessage('Insufficient funds to play. Top up your balance.', 'ERROR');
+                    set({ guessState: 'INSUFFICIENT_FUNDS' });
                     return;
                 }
 
@@ -96,21 +100,29 @@ export const useContractStore = create<ContractStore>(
 
                 try {
                     const { logs, txHash } = await placeHit(x, y);
-                    const lastPlay = logs.length === 2;
                     trackEvent('guess_transaction_success', {
                         wallet_address: address,
                         wallet_used: connector,
                     });
                     addNewMessage('Target strike tx: ' + txHash);
 
-                    const hitFeedbackLog = logs[lastPlay ? 1 : 0];
+                    // Find the HitFeedback event log (filter by event name if available)
+                    const hitFeedbackLog = logs.find(
+                        (log: any) => log.eventName === 'HitFeedback'
+                    ) || logs[0];
+                    const lastPlay = logs.some((log: any) => log.eventName === 'GameOver');
+
+                    if (!hitFeedbackLog || !hitFeedbackLog.args) {
+                        console.error('No HitFeedback event found in logs:', logs);
+                        throw new Error('Transaction succeeded but no HitFeedback event was found in the logs');
+                    }
 
                     const {
                         gameState,
                         sunkShipsCount,
                         success,
                         sunk,
-                        zenTransferred,
+                        ethAwarded,
                         uniqueStrike,
                         //TODO: Revisit this type
                         //@ts-ignore
@@ -122,7 +134,7 @@ export const useContractStore = create<ContractStore>(
                         import.meta.env.VITE_CONTRACT_ADDRESS,
                         success,
                         sunk,
-                        zenTransferred
+                        ethAwarded
                     );
                     let guessState: GuessState = success ? 'HIT' : 'MISS';
 
@@ -135,12 +147,19 @@ export const useContractStore = create<ContractStore>(
 
                     if (guessState === 'MISS') {
                         addNewMessage('Missed. Shot failed to find target.');
+                        playMissSound();
                     }
                     if (guessState === 'HIT') {
                         addNewMessage('DIRECT HIT. Shot successfully found target.', 'SUCCESS');
+                        if (sunk) {
+                            playSinkSound();
+                        } else {
+                            playHitSound();
+                        }
                     }
                     if (guessState === 'WINNING_HIT') {
                         addNewMessage('WINNING HIT. ALL SHIPS SUNK.', 'SUCCESS');
+                        playWinningHitSound();
                     }
                     if (guessState === 'ALREADY_HIT') {
                         addNewMessage(
@@ -152,8 +171,28 @@ export const useContractStore = create<ContractStore>(
                     get().setMisses(misses);
                     get().setGraveyard(sunkShipsCount);
                     set({ guessState });
-                    set({ lastReward: parseFloat(ethers.formatEther(zenTransferred)) });
+                    set({ lastReward: parseFloat(ethers.formatEther(ethAwarded)) });
+                    
+                    // Determine reward type based on hit result
+                    let rewardType: RewardType = null;
+                    if (success && uniqueStrike) {
+                        if (sunk) {
+                            rewardType = lastPlay ? 'FINAL_SINK' : 'SINK';
+                        } else {
+                            rewardType = 'HIT';
+                        }
+                    }
+                    set({ lastRewardType: rewardType });
+                    
                     get().setLastGuessCoords([x, y]);
+                    
+                    // Auto-reset for states that don't show a dialog (MISS, ALREADY_HIT)
+                    // This allows the player to continue playing without needing to close a dialog
+                    if (guessState === 'MISS' || guessState === 'ALREADY_HIT') {
+                        setTimeout(() => {
+                            get().resetGuessState();
+                        }, 1000); // Small delay to let user see the result
+                    }
                 } catch (error) {
                     console.error(error);
                     const e = error as WriteContractErrorType;

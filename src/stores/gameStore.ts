@@ -11,7 +11,6 @@ import { MOVE_FEE } from '@/lib/constants';
 import { playDeniedSound, playSelectSound, playTickSound } from '@/lib/sounds';
 
 import { useContractStore } from './contractStore';
-import { useMessageStore } from './messageStore';
 
 export type Cell = {
     row: number;
@@ -114,7 +113,7 @@ export const useGameStore = create<GameStore>(
                 
                 if (!hasEnoughBalance) {
                     playDeniedSound();
-                    useMessageStore.getState().addNewMessage('Insufficient funds to play. Top up your balance.', 'ERROR');
+                    useContractStore.setState({ guessState: 'INSUFFICIENT_FUNDS' });
                     return;
                 }
 
