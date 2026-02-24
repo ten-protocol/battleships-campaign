@@ -2,7 +2,6 @@ import { UIEvent, useEffect } from 'react';
 
 import { useMeasure } from '@react-hookz/web';
 
-import { GRID_CONTAINER_HEIGHT } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
 import { useGameStore } from '@/stores/gameStore';
 
@@ -11,8 +10,16 @@ import BattleGridCanvas from './BattleGridCanvas';
 const styles = {
     container: {
         width: '100%',
-        height: GRID_CONTAINER_HEIGHT + 'px',
+        height: '100%',
         overflow: 'hidden',
+        position: 'relative' as const,
+    },
+    innerShadow: {
+        position: 'absolute' as const,
+        inset: 0,
+        pointerEvents: 'none' as const,
+        zIndex: 10,
+        boxShadow: 'inset 0 0 150px 80px rgba(0, 0, 0, 0.95)',
     },
 };
 
@@ -36,6 +43,7 @@ export default function BattleGridContainer() {
     return (
         <div ref={elementRef} style={{ ...styles.container }} onScroll={handleScroll}>
             <BattleGridCanvas width={measures?.width} height={measures?.height} />
+            <div style={styles.innerShadow} />
         </div>
     );
 }

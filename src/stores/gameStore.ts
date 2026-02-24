@@ -1,3 +1,4 @@
+import { useSessionKeyStore } from '@tenprotocol/ten-kit';
 import { produce } from 'immer';
 import { StateCreator, create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -6,6 +7,8 @@ import getCellCoordsFromXY from '@/helpers/getCellCoordsFromXY';
 import getCellXY from '@/helpers/getCellXY';
 import getIndexFromCoords from '@/helpers/getIndexFromCoords';
 import getSnappedMousePosition from '@/helpers/getSnappedMousePosition';
+import { MOVE_FEE } from '@/lib/constants';
+import { playDeniedSound, playSelectSound, playTickSound } from '@/lib/sounds';
 
 import { useContractStore } from './contractStore';
 
@@ -87,6 +90,14 @@ export const useGameStore = create<GameStore>(
 
                     if (!hoveredCell || isRevealed) return {};
 
+                    // Play tick sound when hovering over a new cell
+                    const isSameCell =
+                        state.hoveredCell?.col === hoveredCell.col &&
+                        state.hoveredCell?.row === hoveredCell.row;
+                    if (!isSameCell) {
+                        playTickSound();
+                    }
+
                     return {
                         hoveredCell: hoveredCell || null,
                     };
@@ -96,6 +107,17 @@ export const useGameStore = create<GameStore>(
                 const selectedCell = get().hoveredCell;
                 if (!selectedCell || useContractStore.getState().guessState !== 'IDLE') return;
 
+                // Check balance before playing select sound
+                const { balance } = useSessionKeyStore.getState();
+                const hasEnoughBalance = balance?.eth && balance.eth >= parseFloat(MOVE_FEE);
+                
+                if (!hasEnoughBalance) {
+                    playDeniedSound();
+                    useContractStore.setState({ guessState: 'INSUFFICIENT_FUNDS' });
+                    return;
+                }
+
+                playSelectSound();
                 set({ selectedCell });
                 const submitGuess = useContractStore.getState().submitGuess;
                 submitGuess(selectedCell.col, selectedCell.row);

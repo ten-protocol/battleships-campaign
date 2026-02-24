@@ -1,4 +1,4 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { ConnectWalletButton } from '@tenprotocol/ten-kit';
 import { useAccount } from 'wagmi';
 
 import AnimatedText from '@/components/AnimatedText/AnimatedText';
@@ -38,23 +38,10 @@ export default function DisconnectedScreen({ contractError }: Props) {
                     </div>
                 )}
 
-                <div className="flex flex-col justify-center border-l-stone-50 border p-4">
-                    <p>Your wallet needs to have already been registered with TEN chain.</p>
-                    <p className="mb-4">
-                        Register it here at{' '}
-                        <a
-                            className="text-accent underline"
-                            href={GATEWAY_URL}
-                            rel="noopener"
-                            target="_blank"
-                        >
-                            GATEWAY
-                        </a>{' '}
-                        and then Connect.
-                    </p>
-
-                    <div className="flex justify-center">
-                        <ConnectButton showBalance={false} chainStatus="name" />
+                <div className="flex flex-col justify-center p-4">
+                    <div className="flex flex-col justify-center items-center">
+                        <img src="/ten-orb.webp" className="max-w-[300px]" />
+                        <ConnectWalletButton />
                     </div>
                 </div>
 

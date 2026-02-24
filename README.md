@@ -1,6 +1,6 @@
 # Battleship Game
 On-chain game heavily inspired by the classic board game Battleships. Players are presented with a grid and select squares to try to sink as many of the ships as possible.
-Each successful hit or ship sinking is rewarded with a ZEN game token.
+Each successful hit or ship sinking is rewarded with ETH.
 
 ![In-game screenshot](./public/screenshot.png)
 
@@ -21,7 +21,6 @@ Add the following env vars....
 USER_KEY=<KEY>
 PRIVATE_KEY=<KEY>
 VITE_CONTRACT_ADDRESS=<CONTRACT ADDRESS>
-VITE_ZEN_CONTRACT_ADDRESS=<ZEN CONTRACT ADDRESS>
 VITE_ZEN_API=https://faucet.ten.xyz
 
 ```
@@ -31,7 +30,7 @@ VITE_ZEN_API=https://faucet.ten.xyz
 
 ## Deploying Battleships
 
-The test version of the contract requires to deploy ZEN first and push it's address to the constructor of `BattleshipGameTestnet`. Then it's crucial to call `mint()` function on ZEN contract specifying `BattleshipGameTestnet` as a receiver. The target amount to mint is `1262 * 10**18` (`1262000000000000000000`).
+After deploying the contract, send ETH to the contract address to fund the prize pool for rewards.
 
 ### Install dependencies
 

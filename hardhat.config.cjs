@@ -14,7 +14,12 @@ task('deploy', 'Deploys the BattleshipGame contract').setAction(async (taskArgs,
 })
 
 module.exports = {
-  solidity: '0.8.20',
+  solidity: {
+    compilers: [
+      { version: '0.8.20' },
+      { version: '0.8.26' },
+    ],
+  },
   paths: {
     sources: './contracts',
     artifacts: './src/assets/contract/artifacts'
@@ -22,7 +27,7 @@ module.exports = {
   networks: {
     ten: {
       chainId: 8443,
-      url: `https://testnet.obscu.ro/v1/${USER_KEY}`,
+      url: `https://testnet-rpc.ten.xyz/v1/${USER_KEY}`,
       gasPrice: 2000000000,
       accounts: [`0x${PRIVATE_KEY}`]
     }

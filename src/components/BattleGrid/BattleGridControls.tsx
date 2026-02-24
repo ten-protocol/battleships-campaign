@@ -44,15 +44,60 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
     }));
     canvasSizeRef.current = { width, height };
 
-    if (!isMovable) {
-        mousePositionRef.current = { x: -1, y: -1 };
-    }
+    const isMouseActiveRef = useRef(false);
+
+    // Track mouse position globally (even when PIXI events are disabled)
+    // and update hovered cell when guessState becomes IDLE
+    useEffect(() => {
+        const handleDocumentMouseLeave = () => {
+            isMouseActiveRef.current = false;
+        };
+
+        const handleDocumentMouseMove = (e: MouseEvent) => {
+            // Check what element is under the cursor
+            const elementsUnderCursor = document.elementsFromPoint(e.clientX, e.clientY);
+
+            // Check if the topmost interactive element is a canvas (PIXI)
+            // UI elements will be on top of the canvas in the DOM
+            const isOverCanvas =
+                elementsUnderCursor.length > 0 &&
+                elementsUnderCursor[0].tagName.toLowerCase() === 'canvas';
+
+            isMouseActiveRef.current = isOverCanvas;
+
+            // Always track mouse position (even when guessState is not IDLE)
+            if (isOverCanvas) {
+                mousePositionRef.current = { x: e.clientX, y: e.clientY };
+            }
+        };
+
+        document.addEventListener('mouseleave', handleDocumentMouseLeave);
+        document.addEventListener('mousemove', handleDocumentMouseMove);
+
+        return () => {
+            document.removeEventListener('mouseleave', handleDocumentMouseLeave);
+            document.removeEventListener('mousemove', handleDocumentMouseMove);
+        };
+    }, []);
+
+    // When guessState becomes IDLE again, update hovered cell with current mouse position
+    useEffect(() => {
+        if (
+            guessState === 'IDLE' &&
+            mousePositionRef.current.x >= 0 &&
+            mousePositionRef.current.y >= 0
+        ) {
+            const gx = mousePositionRef.current.x;
+            const gy = mousePositionRef.current.y;
+            setHoveredCell(gx + -1 * x.get(), gy + -1 * y.get());
+        }
+    }, [guessState]);
 
     useEffect(() => {
         let animationFrameId = 0;
 
         const smoothScroll = () => {
-            if (draggingState === 'MOVE') {
+            if (draggingState === 'MOVE' || !isMouseActiveRef.current) {
                 animationFrameId = requestAnimationFrame(smoothScroll);
                 return;
             }
@@ -162,19 +207,19 @@ export default function BattleGridControls({ width = 0, height = 0, children }: 
         let newX = x;
         let newY = y;
 
-        if (newX > 0) {
-            newX = 0;
+        if (newX > width / 2) {
+            newX = width / 2;
         }
-        if (newX < -1 * (gridWidth - width)) {
-            newX = -1 * (gridWidth - width);
-        }
-
-        if (newY > 0) {
-            newY = 0;
+        if (newX < -1 * (gridWidth - width / 2)) {
+            newX = -1 * (gridWidth - width / 2);
         }
 
-        if (newY < -1 * (gridHeight - height)) {
-            newY = -1 * (gridHeight - height);
+        if (newY > height / 2) {
+            newY = height / 2;
+        }
+
+        if (newY < -1 * (gridHeight - height / 2)) {
+            newY = -1 * (gridHeight - height / 2);
         }
 
         return [newX, newY];

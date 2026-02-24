@@ -5,8 +5,6 @@ import { useAccount, useReadContract } from 'wagmi';
 import { useShallow } from 'zustand/react/shallow';
 
 import BattleshipGameJson from '@/assets/contract/artifacts/contracts/BattleshipGameTestnet.sol/BattleshipGameTestnet.json';
-import DisconnectedScreen from '@/components/DisconnectedScreen/DisconnectedScreen';
-import HudWindow from '@/components/HudWindow/HudWindow';
 import SocialShare from '@/components/SocialShare/SocialShare';
 import { TEN_CHAIN_ID } from '@/lib/constants';
 import { useContractStore } from '@/stores/contractStore';
@@ -58,11 +56,7 @@ export default function BattleGrid() {
     };
 
     return (
-        <HudWindow
-            headerTitle="Battle Grid"
-            isOpen={connectedToTen && isSuccess}
-            closedContent={<DisconnectedScreen contractError={isError} />}
-        >
+        <div>
             {gameOver ? (
                 <div className="text-center flex flex-col gap-4 mx-6">
                     <h2 className="text-2xl my-4">THE GAME HAS ENDED</h2>
@@ -85,9 +79,9 @@ export default function BattleGrid() {
                     </div>
                 </div>
             ) : (
-                <div className="w-screen max-w-full" style={{ height: 524 }}>
+                <div className="w-full h-full">
                     {displayGrid ? (
-                        <motion.div {...animation}>
+                        <motion.div {...animation} className="w-full h-full">
                             <BattleGridContainer />
                             <BattleGridCurrentCoordinates />
                         </motion.div>
@@ -96,6 +90,6 @@ export default function BattleGrid() {
                     )}
                 </div>
             )}
-        </HudWindow>
+        </div>
     );
 }
